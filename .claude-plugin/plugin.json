@@ -1,9 +1,14 @@
 {
   "name": "qa-medi-plugin",
-  "version": "0.1.8",
-  "description": "QA Medi - 사내 QA 자동화 Claude Code 플러그인",
+  "version": "0.1.9",
+  "description": "사내 QA 자동화를 위한 Claude Code 플러그인",
   "author": {
-    "name": "k984530"
+    "name": "MediSolveAIDev",
+    "url": "https://github.com/MediSolveAIDev"
   },
-  "license": "MIT"
+  "homepage": "https://github.com/MediSolveAIDev/QA-MEDI-PLUGIN",
+  "repository": "https://github.com/MediSolveAIDev/QA-MEDI-PLUGIN",
+  "license": "MIT",
+  "keywords": ["qa", "test", "claude-code", "plugin", "automation"],
+  "commands": "./commands"
 }

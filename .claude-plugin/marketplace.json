@@ -1,17 +1,29 @@
 {
-  "name": "qa-medi-plugin",
+  "name": "qa-medi-marketplace",
   "owner": {
-    "name": "k984530"
+    "name": "MediSolveAIDev",
+    "email": "medisolveaidev@github.com"
   },
   "metadata": {
-    "description": "사내 QA 자동화 플러그인"
+    "description": "사내 QA 자동화 플러그인 마켓플레이스",
+    "version": "0.1.9"
   },
   "plugins": [
     {
       "name": "qa-medi-plugin",
-      "source": "./",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/MediSolveAIDev/QA-MEDI-PLUGIN.git"
+      },
       "description": "사내 QA 자동화 Claude Code 플러그인",
-      "version": "0.1.8"
+      "version": "0.1.9",
+      "author": {
+        "name": "MediSolveAIDev"
+      },
+      "repository": "https://github.com/MediSolveAIDev/QA-MEDI-PLUGIN",
+      "license": "MIT",
+      "keywords": ["qa", "test", "automation"],
+      "category": "QA Tools"
     }
   ]
 }

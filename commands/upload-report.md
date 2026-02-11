@@ -1,5 +1,4 @@
 ---
-name: qa-medi-upload-report
 description: 테스트 결과 리포트를 Confluence 페이지로 업로드하는 코드를 생성합니다.
 ---
 
