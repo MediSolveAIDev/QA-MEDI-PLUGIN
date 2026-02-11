@@ -2,7 +2,6 @@
 name: write-scenario
 description: 기획서/정책서를 기반으로 테스트 시나리오를 작성합니다. Confluence Page ID 또는 시나리오 파일 경로를 전달하세요.
 argument-hint: [Confluence Page ID 또는 파일 경로]
-disable-model-invocation: true
 ---
 
 # 시나리오 작성

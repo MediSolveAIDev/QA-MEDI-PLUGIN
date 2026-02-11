@@ -2,7 +2,6 @@
 name: write-tc
 description: 시나리오를 기반으로 테스트 케이스(TC)를 작성합니다. 시나리오 JSON 파일 경로, Confluence Page ID, 또는 Figma 노드 ID를 전달하세요.
 argument-hint: [시나리오 파일 경로 또는 Page ID]
-disable-model-invocation: true
 ---
 
 # TC 작성

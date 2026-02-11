@@ -1,7 +1,6 @@
 ---
 name: share-slack
 description: 테스트 결과를 Slack 채널로 공유하는 코드를 생성합니다.
-disable-model-invocation: true
 ---
 
 # /share-slack
