@@ -1,4 +1,5 @@
 ---
+name: qa-medi-Hello
 description: 간단한 인사 커맨드
 ---
 
