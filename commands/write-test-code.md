@@ -1,5 +1,5 @@
 ---
-name: qa-medi-write-test-code
+name: write-test-code
 description: TC 또는 시나리오를 기반으로 pytest + playwright 자동화 테스트 코드를 생성합니다. TC JSON 파일 경로 또는 시나리오 파일 경로를 전달하세요.
 argument-hint: [TC 파일 경로 또는 시나리오 파일 경로]
 ---

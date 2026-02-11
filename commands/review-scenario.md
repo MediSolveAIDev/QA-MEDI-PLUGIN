@@ -1,5 +1,5 @@
 ---
-name: qa-medi-review-scenario
+name: review-scenario
 description: 작성된 시나리오를 기획서/정책서 기준으로 리뷰합니다. 시나리오 파일 경로 또는 제품명+버전을 전달하세요.
 argument-hint: [시나리오 파일 경로 또는 제품명 버전]
 ---
