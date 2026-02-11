@@ -45,11 +45,3 @@
 | Skill | `skills/qa-skill/SKILL.md` | QA 검증 스킬 |
 | Hook | `hooks/hooks.json` | 파일 수정 감지 훅 |
 | MCP Server | `mcp/server.py` | QA 도구 서버 |
-
-## 사용법
-
-설치 후 Claude Code에서 `/qa` 커맨드로 QA 검증을 실행할 수 있습니다.
-
-```
-/qa [대상 파일 또는 디렉토리]
-```
