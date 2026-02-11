@@ -1,7 +1,7 @@
 {
   "name": "qa-medi-plugin",
   "version": "0.1.0",
-  "description": "QA Medi - 의료 QA 자동화 Claude Code 플러그인",
+  "description": "QA Medi - 사내 QA 자동화 Claude Code 플러그인",
   "author": "",
   "license": "MIT",
   "features": {
