@@ -7,7 +7,7 @@
 ### 1. 마켓플레이스 등록
 
 ```bash
-/plugin marketplace add k984530/qa-medi-plugin
+/plugin marketplace add MediSolveAIDev/QA-MEDI-PLUGIN
 ```
 
 ### 2. 플러그인 설치
@@ -26,7 +26,7 @@
     "qa-medi-plugin": {
       "source": {
         "source": "github",
-        "repo": "k984530/qa-medi-plugin"
+        "repo": "MediSolveAIDev/QA-MEDI-PLUGIN"
       }
     }
   },
