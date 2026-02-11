@@ -1,9 +1,15 @@
 {
-  "hooks": [
-    {
-      "event": "on_tool_call",
-      "pattern": "Edit|Write",
-      "command": "echo 'QA hook: file modification detected'"
-    }
-  ]
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'QA hook: file modification detected'"
+          }
+        ]
+      }
+    ]
+  }
 }
