@@ -153,8 +153,8 @@
 ```
 
 **처리 규칙:**
-- `.env.example`이 있으면 기반으로 `.env` 생성
-- `.env`가 이미 있으면 빈 값만 표시
+- `.env` 파일이 없으면 새로 생성하고 대화형으로 값을 입력받는다
+- `.env`가 이미 있으면 빈 값만 표시하고 해당 항목만 입력받는다
 - API 토큰 입력 시 마스킹 안내 (화면에 노출되므로 주의)
 - `.env`는 `.gitignore`에 포함 확인
 
@@ -226,7 +226,6 @@ API 키: .env ⚠️ (FIGMA_ACCESS_TOKEN 미설정)
 - **config/common.json**: 공통 설정 저장 (Slack, JIRA URL 등)
 - **config/projects/*.json**: 프로젝트별 설정 저장
 - **.env**: API 토큰/비밀번호 저장 (git 추적 안 됨)
-- **.env.example**: 필요한 키 목록 (git 추적됨, 값은 placeholder)
 
 **주의사항:**
 - `.env` 파일은 절대 git에 커밋하지 않음

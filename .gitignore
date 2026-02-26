@@ -26,18 +26,11 @@ Thumbs.db
 .claude/settings.local.json
 .claude/memory/
 
-# Data outputs (에이전트 산출물은 git 제외)
-data/scenarios/**/*.md
-data/scenarios/**/*.json
-data/tc/**/*.json
-data/reviews/**/*.json
-data/assessments/**/*.json
-data/fail_analysis/**/*.json
-data/bugs/**/*.json
-data/rules/**/*.json
-data/test_results/
-data/pipeline/
-!data/**/.gitkeep
+# 로컬 작업 디렉토리 (/init이 생성하는 폴더)
+config/
+data/
+templates/
+tests/
 
 # Screenshots (Playwright)
 screenshots/
@@ -45,8 +38,8 @@ screenshots/
 # Tests output
 tests/results/
 
-# Generated HTML docs (로컬 공유용, MD 원본만 관리)
-docs/*.html
+
+docs/
 
 # IDE
 .vscode/
