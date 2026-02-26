@@ -11,7 +11,7 @@
 
 - **역할**: 테스트 중 발견된 버그를 JIRA 이슈 형식으로 정리
 - **호출 시점**: 수동 테스트 중 버그 발견 시, 또는 `/analyze-fail`에서 실제 버그 판정 시
-- **출력**: `data/bugs/bug_{project}_{id}.json`
+- **출력**: `data/bugs/{PROJECT}_{version}_{feature}_bug.json`
 
 ---
 

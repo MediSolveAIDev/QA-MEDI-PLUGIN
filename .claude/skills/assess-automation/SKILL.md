@@ -138,7 +138,7 @@
 
 ## 검토 완료 후 동작
 
-- 검토 리포트 저장: `data/assessments/automation_assessment_{version}_{feature}.json`
+- 검토 리포트 저장: `data/assessments/{PROJECT}_{version}_{feature}_assessment.json`
 - **Slack 알림**: 팀장에게 검토 완료 + 미팅 요청 알림 발송
 - 팀장 승인 대기 (승인/보류/불가)
 - 승인 시 → Test Coder에게 전달

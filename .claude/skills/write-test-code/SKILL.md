@@ -1,7 +1,7 @@
 ---
 name: write-test-code
 description: TC 또는 시나리오를 기반으로 pytest + playwright 자동화 테스트 코드를 생성합니다. TC JSON 파일 경로 또는 시나리오 파일 경로를 전달하세요.
-argument-hint: [TC 파일 경로 또는 시나리오 파일 경로]
+argument-hint: "[TC 파일 경로 또는 시나리오 파일 경로]"
 ---
 
 # 테스트 코드 생성
@@ -14,13 +14,13 @@ argument-hint: [TC 파일 경로 또는 시나리오 파일 경로]
 
 ### 테스트 코드 저장 경로
 ```
-tests/test_{플랫폼}_{기능}.py
+tests/test_{프로젝트}_{버전}_{기능}.py
 ```
 
 **예시:**
-- `tests/test_pc_login.py`
-- `tests/test_mobile_reservation.py`
-- `tests/test_admin_customer.py`
+- `tests/test_SAY_v3.2_로그인.py`
+- `tests/test_BAY_v1.0_결제.py`
+- `tests/test_SSO_v2.0_인증.py`
 
 ### 테스트 결과 저장 경로
 
@@ -67,10 +67,10 @@ def test_example(page: Page):
 ## 2. 네이밍 규칙
 
 ```python
-# 테스트 파일: test_{플랫폼}_{기능}.py
-test_pc_login.py
-test_mobile_login.py
-test_admin_customer.py
+# 테스트 파일: test_{프로젝트}_{버전}_{기능}.py
+test_SAY_v3.2_로그인.py
+test_BAY_v1.0_결제.py
+test_SSO_v2.0_인증.py
 
 # 테스트 함수: test_{동작}_{조건}_{결과}
 def test_login_with_valid_credentials_should_succeed():

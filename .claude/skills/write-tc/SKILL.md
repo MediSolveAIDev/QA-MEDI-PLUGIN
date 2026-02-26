@@ -1,7 +1,7 @@
 ---
 name: write-tc
 description: 시나리오를 기반으로 테스트 케이스(TC)를 작성합니다. 시나리오 JSON 파일 경로, Confluence Page ID, 또는 Figma 노드 ID를 전달하세요.
-argument-hint: [시나리오 파일 경로 또는 Page ID]
+argument-hint: "[시나리오 파일 경로 또는 Page ID]"
 ---
 
 # TC 작성
@@ -18,17 +18,17 @@ argument-hint: [시나리오 파일 경로 또는 Page ID]
 
 ### 저장 경로
 ```
-data/tc/{제품명}_{버전}_{기능명}_tc.json
+data/tc/{프로젝트}_{버전}_{기능명}_tc.json
 ```
 
 **예시:**
-- `data/tc/say_v1.2.0_process_guide_tc.json`
-- `data/tc/bay_v1.0.0_stock_management_tc.json`
+- `data/tc/SAY_v1.2_프로세스_가이드_tc.json`
+- `data/tc/BAY_v1.0_재고_관리_tc.json`
 
 ### 파일명 규칙
-- 제품명: 소문자, 공백 없음
-- 버전: `v{major}.{minor}.{patch}` 형식
-- 기능명: 소문자, 언더스코어 구분
+- 프로젝트명: 대문자 (SAY, BAY, SSO)
+- 버전: `v{major}.{minor}` 형식
+- 기능명: 한글 허용, 공백 대신 `_` 사용
 - 접미사: `_tc.json`
 
 ### JSON 스키마
@@ -42,7 +42,7 @@ data/tc/{제품명}_{버전}_{기능명}_tc.json
     "created_at": "2026-01-26",
     "updated_at": "2026-01-26",
     "status": "초안",
-    "source_scenario": "data/scenarios/say_v1.2.0_process_guide_scenario.md"
+    "source_scenario": "data/scenarios/SAY_v1.2_프로세스_가이드_scenario.md"
   },
   "test_cases": [
     {

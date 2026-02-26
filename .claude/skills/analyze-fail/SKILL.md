@@ -147,7 +147,7 @@ FAIL을 직접 수정하지 않고, 정확한 원인 분류와 후속 조치를 
 
 ## 분석 완료 후 동작
 
-- 분석 결과 저장: `data/fail_analysis/fail_analysis_{date}.json`
+- 분석 결과 저장: `data/fail_analysis/{PROJECT}_{version}_fail-analysis.json`
 - **Slack 알림**: 팀장에게 분석 결과 요약 발송
   - 실제 버그 발견 시 → 긴급 알림
   - 코드 이슈만 있을 시 → 일반 알림

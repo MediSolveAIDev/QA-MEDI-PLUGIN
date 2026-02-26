@@ -8,7 +8,7 @@
 
 - **역할**: 하나의 프로젝트 변경이 다른 프로젝트에 미치는 영향 분석
 - **호출 시점**: Phase 4 (최종 보고) 중 크로스 프로젝트 해당 시, 또는 수동 요청
-- **출력**: `data/reviews/impact_{version}_{feature}.json`
+- **출력**: `data/reviews/{PROJECT}_{version}_{feature}_impact.json`
 
 ---
 

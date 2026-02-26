@@ -189,4 +189,4 @@ TC가 화면 UI 배치 순서를 따르는지 확인:
 
 - **PASS** → Spec Reviewer + QA Reviewer에게 병렬 체이닝 (또는 팀장에게 Pass 보고)
 - **FAIL** → 위반 목록 반환 → 작성자(TC Writer/Scenario Writer)에게 수정 요청
-- 결과 저장: `data/reviews/format_check_{version}_{feature}.json`
+- 결과 저장: `data/reviews/{PROJECT}_{version}_{feature}_format-check.json`

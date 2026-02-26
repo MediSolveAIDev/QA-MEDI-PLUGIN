@@ -457,7 +457,7 @@ TC에 직접 추가하지 않고, 팀장에게 검토 의견으로 제출한다.
 
 ## 10. 검토 완료 후 동작
 
-- **결과 저장**: `data/reviews/content_review_{version}_{feature}.json`
+- **결과 저장**: `data/reviews/{PROJECT}_{version}_{feature}_review-tc.json`
 - **Pass** → 팀장에게 "리뷰 Pass" 보고 (Slack 알림)
 - **피드백 있음** → 누락 목록 반환 → 작성자에게 보완 요청
 - QA 고도화 제안은 별도로 팀장에게 전달 (TC에 직접 반영하지 않음)
@@ -496,7 +496,7 @@ TC에 직접 추가하지 않고, 팀장에게 검토 의견으로 제출한다.
 - 모순: {N}건
 - Priority 조정: {N}건
 
-📄 상세 리포트: data/reviews/content_review_{version}_{feature}.json
+📄 상세 리포트: data/reviews/{PROJECT}_{version}_{feature}_review-tc.json
 ⏳ TC Writer 보완 후 재리뷰 필요
 ━━━━━━━━━━━━━━━━━━━━━━━━
 ```

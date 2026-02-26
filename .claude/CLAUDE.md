@@ -183,7 +183,7 @@ qa_agent/
 │       ├── say.json
 │       ├── bay.json
 │       └── sso.json
-├── data/                              ← 에이전트 산출물
+├── data/                              ← 에이전트 산출물 (파일명으로 프로젝트 구분)
 │   ├── scenarios/                       ← Scenario Writer
 │   ├── tc/                              ← TC Writer
 │   ├── reviews/                         ← Format Checker + Spec Reviewer + QA Reviewer + Impact Analyzer
@@ -203,7 +203,36 @@ qa_agent/
 
 ---
 
-## 5. TC 작성 규칙 (SAY 프로젝트 기준 참조)
+## 5. 산출물 파일명 규칙
+
+모든 산출물은 프로젝트별 하위 폴더 없이, **파일명에 프로젝트명을 포함**하여 구분한다.
+
+### 네이밍 패턴
+```
+{프로젝트}_{버전}_{기능명}_{산출물유형}.json
+```
+
+### 예시
+| 산출물 | 파일명 | 저장 위치 |
+|--------|--------|-----------|
+| 시나리오 | `SAY_v3.2_로그인_scenario.json` | `data/scenarios/` |
+| TC | `BAY_v1.0_결제_tc.json` | `data/tc/` |
+| 리뷰 | `SAY_v3.2_로그인_review-spec.json` | `data/reviews/` |
+| 자동화 검토 | `SSO_v2.0_인증_assessment.json` | `data/assessments/` |
+| FAIL 분석 | `SAY_v3.2_로그인_fail-analysis.json` | `data/fail_analysis/` |
+| 버그 리포트 | `BAY_v1.0_결제_bug.json` | `data/bugs/` |
+| 테스트 코드 | `test_SAY_v3.2_로그인.py` | `tests/` |
+| 파이프라인 | `SAY_v3.2_pipeline.json` | `data/pipeline/` |
+
+### 규칙
+- 프로젝트명은 대문자 (SAY, BAY, SSO)
+- 버전은 `v{major}.{minor}` 형식
+- 기능명은 한글 허용, 공백 대신 `_` 사용
+- 산출물 유형 접미사로 종류 구분
+
+---
+
+## 6. TC 작성 규칙 (SAY 프로젝트 기준 참조)
 
 > 상세 규칙은 SAY 프로젝트의 CLAUDE.md 11절~11.10절 참조
 > 에이전트별 SKILL.md에 해당 규칙이 포함됨
@@ -219,7 +248,7 @@ qa_agent/
 
 ---
 
-## 6. 개발 로드맵
+## 7. 개발 로드맵
 
 ### Phase 0: 온보딩 (즉시)
 - Setup Guide `/setup` - 플러그인 설치 후 환경 설정 가이드

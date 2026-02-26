@@ -49,17 +49,17 @@ pip install mcp-atlassian
 
 ### 저장 경로 (로컬)
 ```
-data/scenarios/{제품명}_{버전}_{기능명}_scenario.md
+data/scenarios/{프로젝트}_{버전}_{기능명}_scenario.md
 ```
 
 **예시:**
-- `data/scenarios/say_v1.2.0_process_guide_scenario.md`
-- `data/scenarios/bay_v1.0.0_stock_management_scenario.md`
+- `data/scenarios/SAY_v1.2_프로세스_가이드_scenario.md`
+- `data/scenarios/BAY_v1.0_재고_관리_scenario.md`
 
 ### 파일명 규칙
-- 제품명: 소문자, 공백 없음
-- 버전: `v{major}.{minor}.{patch}` 형식
-- 기능명: 소문자, 언더스코어 구분
+- 프로젝트명: 대문자 (SAY, BAY, SSO)
+- 버전: `v{major}.{minor}` 형식
+- 기능명: 한글 허용, 공백 대신 `_` 사용
 - 접미사: `_scenario.md`
 
 ### 마크다운 구조 (최종 형식)

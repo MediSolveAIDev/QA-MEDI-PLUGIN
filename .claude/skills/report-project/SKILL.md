@@ -8,7 +8,7 @@
 
 - **역할**: 프로젝트 QA 진행 현황, TC 실행 결과, 버그 통계를 종합 리포트로 생성
 - **호출 시점**: Phase 4 (최종 보고) 또는 팀장 수동 요청
-- **출력**: `data/pipeline/report_{project}_{version}.json` + 마크다운 요약
+- **출력**: `data/pipeline/{PROJECT}_{version}_report.json` + 마크다운 요약
 
 ---
 
@@ -81,7 +81,7 @@
 ## 4. 출력 형식
 
 ### 4.1 JSON (기계 소비용)
-- `data/pipeline/report_{project}_{version}.json`
+- `data/pipeline/{PROJECT}_{version}_report.json`
 
 ### 4.2 마크다운 요약 (사람 소비용)
 

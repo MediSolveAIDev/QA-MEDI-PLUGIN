@@ -121,16 +121,16 @@
 에이전트 간 데이터는 파일 기반으로 전달:
 
 ```
-/write-scenario 출력 → data/scenarios/{version}_{feature}.md
+/write-scenario 출력 → data/scenarios/{PROJECT}_{version}_{feature}_scenario.md
     ↓
 /review-spec, /review-qa 입력 → 시나리오 파일 경로
     ↓
-/review-spec 출력 → data/reviews/spec_review_{version}_{feature}.json
-/review-qa 출력 → data/reviews/qa_review_{version}_{feature}.json
+/review-spec 출력 → data/reviews/{PROJECT}_{version}_{feature}_review-spec.json
+/review-qa 출력 → data/reviews/{PROJECT}_{version}_{feature}_review-qa.json
     ↓
 /write-tc 입력 → 시나리오 + 리뷰 피드백
     ↓
-/write-tc 출력 → data/tc/{version}_{feature}.xlsx
+/write-tc 출력 → data/tc/{PROJECT}_{version}_{feature}_tc.json
 ```
 
 ---
