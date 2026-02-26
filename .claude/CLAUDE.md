@@ -70,16 +70,17 @@
 ## 3. 에이전트 운영 규칙
 
 ### 3.0 온보딩 (최초 1회)
-- 플러그인 설치 후 `/setup` 실행 → 대화형으로 환경 설정 완료
-- 공통 설정(`config/common.json`) + 프로젝트별 설정(`config/projects/*.json`) + API 키(`.env`) 세팅
+- 플러그인 설치 후 `/init` → `/setup` 순서로 실행
+- `/init`: 로컬 폴더 구조 + 빈 config 파일 생성
+- `/setup`: 공통 설정(`config/common.json`) + 프로젝트별 설정(`config/projects/*.json`) + API 키(`.env`) 대화형 입력
 - 온보딩 완료 즉시 업무 요청 가능 (별도 설정 파일 수동 편집 불필요)
 - 이후 `/setup check`로 설정 상태 확인, `/setup update {프로젝트}`로 변경 가능
 
 **⚠️ 자동 감지 규칙 (필수):**
-- 세션 시작 시 `config/common.json`의 필수 값(`slack.team_lead_user_id`, `jira.base_url`, `confluence.base_url`)이 비어있으면 자동으로 온보딩 안내
-- 안내 형식: `"⚠️ 환경 설정이 완료되지 않았습니다. /setup 으로 초기 세팅을 먼저 진행해주세요."`
-- 사용자가 `/setup` 없이 업무 요청 시에도 미설정 감지되면 안내 후 진행 여부 확인
-- `.env` 파일이 없으면: `"⚠️ .env 파일이 없습니다. /setup 을 실행하거나 .env.example을 복사해주세요."`
+- `config/` 폴더가 없으면: `"⚠️ 작업 환경이 초기화되지 않았습니다. /init 을 먼저 실행해주세요."`
+- `config/common.json`의 필수 값(`slack.team_lead_user_id`, `jira.base_url`, `confluence.base_url`)이 비어있으면: `"⚠️ 환경 설정이 완료되지 않았습니다. /setup 으로 초기 세팅을 먼저 진행해주세요."`
+- `.env` 파일이 없으면: `"⚠️ .env 파일이 없습니다. /setup 을 실행하여 API 키를 설정해주세요."`
+- 사용자가 업무 요청 시에도 미설정 감지되면 안내 후 진행 여부 확인
 - 온보딩 완료 상태면 안내 없이 바로 업무 수행
 
 ### 3.1 트리거 규칙

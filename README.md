@@ -4,11 +4,9 @@ QA AI 에이전트 팀 운영 플러그인 — Claude Code 스킬 기반
 
 ## 설치
 
-터미널에서 실행:
-
 ```bash
-claude plugin marketplace add MediSolveAIDev/QA-MEDI-PLUGIN
-claude plugin install qa-medi-plugin@qa-medi-plugin
+/plugin marketplace add MediSolveAIDev/QA-MEDI-PLUGIN
+/plugin install qa-medi-plugin@qa-medi-plugin
 ```
 
 ## 초기 설정
@@ -60,7 +58,7 @@ claude plugin install qa-medi-plugin@qa-medi-plugin
 ## 업데이트
 
 ```bash
-claude plugin update qa-medi-plugin@qa-medi-plugin
+/plugin update qa-medi-plugin@qa-medi-plugin
 ```
 
 플러그인 업데이트는 스킬 파일만 갱신. 로컬 작업 데이터(config, data, .env)에 영향 없음.
