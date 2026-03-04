@@ -178,7 +178,7 @@
 ### Step 5: 설정 완료 요약
 
 ```
-✅ 세팅 완료!
+✅ 환경 설정 완료!
 
 공통 설정: config/common.json ✅
 프로젝트 설정:
@@ -189,6 +189,26 @@ API 키: .env ⚠️ (FIGMA_ACCESS_TOKEN 미설정)
 
 💡 나중에 변경하려면: /setup update SAY
 💡 상태 확인하려면: /setup check
+```
+
+### Step 6: 사용법 가이드 출력
+
+설정 완료 요약 직후 아래 사용법 가이드를 자동 출력한다:
+
+```
+🚀 사용법:
+  • /run-pipeline             → 새 파이프라인 시작 (대화형 정보 수집)
+  • /run-pipeline SAY v1.4.0  → 프로젝트/버전 지정하여 시작
+  • "새 업무 줄게"             → 자연어로 시작
+
+📌 진행 중 명령:
+  • "기획서 업데이트됐어"      → 기획 변경 대응 (시나리오 diff 업데이트)
+  • Ctrl+C                    → 일시정지 (자동 저장, --resume로 재개)
+
+📂 산출물 위치:
+  • data/scenarios/  → 시나리오
+  • data/tc/         → TC
+  • data/pipeline/   → 파이프라인 상태
 ```
 
 ---
