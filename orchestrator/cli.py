@@ -44,6 +44,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 _auto_approve = False
 
+# 수동 승인이 필요한 포인트 (팀장 확인 필수)
+MANUAL_APPROVALS = {"0", "1", "2", "3", "4", "6"}
+
+# 자동 승인 포인트 (Slack 알림만 보내고 진행)
+# "5" (FAIL 분석): FAIL 없으면 자동 통과, 있으면 phase 코드에서 수동 처리
+
 
 def set_auto_approve(enabled: bool):
     """Claude Code 내 실행 시 자동 승인 모드 설정."""
@@ -58,9 +64,12 @@ def ask_approval(approval_id: str, description: str, details: str = "") -> str:
     print(f"{'='*60}")
     if details:
         print(details)
-    if _auto_approve:
-        print("  → 자동 승인 (--auto-approve)")
+
+    # --auto-approve 모드: 수동 승인 포인트만 멈추고 나머지 자동 통과
+    if _auto_approve and approval_id not in MANUAL_APPROVALS:
+        print("  → 자동 승인")
         return "approved"
+
     print()
     while True:
         choice = input("  [A]승인 / [R]거부 / [W]재작업? ").strip().upper()

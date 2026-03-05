@@ -26,32 +26,21 @@
 
 사용자가 `/run-pipeline` 또는 자연어로 업무를 요청하면, 아래 Python 명령을 실행한다.
 
-### 2.1 Claude Code 내 실행 (기본 — Phase별 승인)
+### 2.1 Claude Code 내 실행 (기본 — 전체 자동 진행)
 
-Claude Code에서는 **Phase 단위로 끊어서 실행**하고, 승인은 대화에서 받는다.
-`--auto-approve`를 사용하여 orchestrator 내부 input()을 우회하되, Phase별로 나눠 실행한다.
+`--auto-approve`로 실행하면 **전체 파이프라인이 한 번에 진행**된다.
+팀장 승인이 필요한 포인트(0,1,2,3,4,6)에서만 멈추고, 나머지는 자동으로 달린다.
 
-**실행 흐름:**
-
-```
-① 정보 수집 (대화에서 프로젝트/버전/기획서 확인)
-   ↓
-② Phase 1-A 실행
-   python -m orchestrator --project SAY --version v1.4.0 --feature "로그인" --spec-url "PAGE_ID" --phase 1-A --auto-approve
-   → 결과를 사용자에게 보고 → "승인/재작업?" 질문
-   ↓
-③ 사용자 승인 → Phase 1-B 실행
-   python -m orchestrator --resume SAY_v1.4.0 --phase 1-B --auto-approve
-   → 결과 보고 → 승인 질문
-   ↓
-④ 이후 Phase도 동일하게 반복
+**실행:**
+```bash
+python -m orchestrator --project SAY --version v1.4.0 --feature "로그인" --spec-url "PAGE_ID" --auto-approve
 ```
 
-**승인 포인트에서의 동작:**
-- Phase 실행 완료 후 결과를 대화에 출력
-- 사용자에게 "승인할까요? (승인 / 재작업 / 거부)" 질문
-- "승인" → 다음 Phase 실행
-- "재작업" → 같은 Phase 재실행
+**승인 동작:**
+- 자동 승인 (5): Slack 알림만 보내고 바로 다음 단계 진행
+- 수동 승인 (0,1,2,3,4,6): Slack 알림 + 터미널에서 팀장 응답 대기
+- "승인" → 다음 단계 진행
+- "재작업" → 해당 단계 재실행
 - "거부" → 파이프라인 중단, 상태 저장
 
 ### 2.2 터미널 직접 실행 (대화형)

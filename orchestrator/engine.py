@@ -128,13 +128,6 @@ class PipelineEngine:
                 log("ERROR", f"Phase {phase_name}에서 거부됨")
                 return
 
-            # --auto-approve: Phase 완료 후 상태 저장하고 종료 (다음 Phase는 --resume으로)
-            if self.args.auto_approve:
-                state.status = "awaiting_approval"
-                state.save()
-                log("INFO", f"Phase {phase_name} 완료. 승인 대기 중. 재개: --resume {state.pipeline_id}")
-                return
-
         state.status = "completed"
         state.save()
         log("INFO", f"파이프라인 완료: {state.pipeline_id}")
