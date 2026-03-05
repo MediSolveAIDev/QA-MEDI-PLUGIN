@@ -2,7 +2,7 @@
 
 from orchestrator.cli import ask_approval
 from orchestrator.config import CommonConfig, EnvConfig, ProjectConfig
-from orchestrator.notify.slack import send_approval_notification
+from orchestrator.notify.slack import send_approval_notification, send_progress_notification
 from orchestrator.skills.invoker import invoke_skill
 from orchestrator.state import PipelineState
 from orchestrator.utils.logger import log
@@ -35,6 +35,12 @@ def run_phase4(
     if report_result.success and report_result.output_file:
         state.artifacts["report"] = report_result.output_file
         state.save()
+
+    send_progress_notification(
+        common_config, env_config, state,
+        "프로젝트 리포트 생성 완료.",
+        no_slack=no_slack,
+    )
 
     # ---- Step 2: 크로스 프로젝트 영향 ----
     is_cross = (
@@ -69,6 +75,12 @@ def run_phase4(
 
     # ---- 최종 요약 ----
     _print_summary(state)
+
+    send_progress_notification(
+        common_config, env_config, state,
+        "파이프라인 완료.",
+        no_slack=no_slack,
+    )
 
     return "continue"
 

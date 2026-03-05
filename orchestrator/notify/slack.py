@@ -1,4 +1,4 @@
-"""Slack DM 알림: 승인 포인트 도달 시 팀장에게 알림."""
+"""Slack 알림: 승인 요청 + 산출물 진행 상황 알림."""
 
 import requests
 
@@ -73,3 +73,49 @@ def send_approval_notification(
             log("WARN", f"Slack 알림 실패: {response.status_code}")
     except Exception as e:
         log("WARN", f"Slack 알림 오류: {e}")
+
+
+def send_progress_notification(
+    common_config: CommonConfig,
+    env_config: EnvConfig,
+    state: PipelineState,
+    message: str,
+    no_slack: bool = False,
+):
+    """Slack Webhook으로 진행 상황 알림 발송."""
+    if no_slack:
+        return
+
+    webhook_url = common_config.slack_webhook_url or env_config.slack_webhook_url
+    if not webhook_url:
+        log("WARN", "Slack webhook URL 미설정. 알림 건너뜀.")
+        return
+
+    text = (
+        f":arrows_counterclockwise: *QA Agent 진행 알림*\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"프로젝트: `{state.project} {state.version}`\n"
+        f"기능: {state.feature}\n"
+        f"Phase: {state.current_phase}\n"
+        f"\n{message}\n━━━━━━━━━━━━━━━━━━━━"
+    )
+
+    payload = {
+        "text": text,
+        "attachments": [
+            {
+                "color": "#36a64f",
+                "title": f"[{state.project} {state.version}]",
+                "text": f"Phase: {state.current_phase} | Pipeline: {state.pipeline_id}",
+            }
+        ],
+    }
+
+    try:
+        response = requests.post(webhook_url, json=payload, timeout=10)
+        if response.status_code == 200:
+            log("INFO", f"Slack 진행 알림 발송: {message[:50]}")
+        else:
+            log("WARN", f"Slack 진행 알림 실패: {response.status_code}")
+    except Exception as e:
+        log("WARN", f"Slack 진행 알림 오류: {e}")

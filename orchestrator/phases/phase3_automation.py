@@ -2,7 +2,7 @@
 
 from orchestrator.cli import ask_approval
 from orchestrator.config import CommonConfig, EnvConfig, ProjectConfig
-from orchestrator.notify.slack import send_approval_notification
+from orchestrator.notify.slack import send_approval_notification, send_progress_notification
 from orchestrator.skills.invoker import invoke_skill
 from orchestrator.state import PipelineState
 from orchestrator.utils.logger import log
@@ -68,6 +68,12 @@ def run_phase3(
     if test_result.success and test_result.output_file:
         state.artifacts["test_code"] = test_result.output_file
         state.save()
+
+    send_progress_notification(
+        common_config, env_config, state,
+        "테스트 코드 생성 완료, GitHub Actions 실행이 필요합니다.",
+        no_slack=no_slack,
+    )
 
     # ---- Step 4: GitHub Actions (수동) ----
     print(f"\n  [안내] 테스트 코드가 생성되었습니다.")

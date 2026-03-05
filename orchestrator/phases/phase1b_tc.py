@@ -4,7 +4,7 @@ import json
 
 from orchestrator.cli import ask_approval, ask_url
 from orchestrator.config import CommonConfig, EnvConfig, ProjectConfig
-from orchestrator.notify.slack import send_approval_notification
+from orchestrator.notify.slack import send_approval_notification, send_progress_notification
 from orchestrator.review.gate import MAX_RETRIES, run_review_gate
 from orchestrator.skills.invoker import invoke_skill
 from orchestrator.state import PipelineState
@@ -56,6 +56,12 @@ def run_phase1b(
     state.artifacts["tc"] = tc_path
     state.save()
 
+    send_progress_notification(
+        common_config, env_config, state,
+        "TC 작성 완료, 포맷 검증 진행합니다.",
+        no_slack=no_slack,
+    )
+
     # ---- Step 2: 포맷 검증 ----
     for fmt_attempt in range(MAX_RETRIES + 1):
         log("INFO", f"Phase 1-B Step 2: 포맷 검증 (시도 {fmt_attempt + 1})")
@@ -72,6 +78,11 @@ def run_phase1b(
 
         if format_verdict == "PASS":
             log("INFO", "포맷 검증 PASS")
+            send_progress_notification(
+                common_config, env_config, state,
+                "포맷 검증 Pass, 내용 리뷰 진행합니다.",
+                no_slack=no_slack,
+            )
             break
 
         if fmt_attempt >= MAX_RETRIES:

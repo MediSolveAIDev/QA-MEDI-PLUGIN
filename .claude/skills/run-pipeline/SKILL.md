@@ -103,26 +103,39 @@ python -m orchestrator --resume SAY_v1.4.0 --spec-update NEW_SPEC_URL --auto-app
 Python Orchestrator가 아래 흐름을 자동으로 진행한다:
 
 ```
-Phase 0: 입력 수집 + 계획 확인 (★ 승인 0)
+Phase 0: 입력 수집 + 계획 확인
+  ・정보 수집 (프로젝트/버전/기획서)
+  ★ 승인 0: 진행 계획 확인
   ↓
 Phase 1-A: 시나리오 확정
-  ① /write-scenario → ② [/review-spec + /review-qa] 병렬
-  ③ 리뷰 루프 (최대 3회) → ★ 승인 1
-  ④ Figma 보강 → ★ 승인 2: 시나리오 확정
-  ⑤ Confluence 업로드
+  ① /write-scenario (시나리오 작성)
+  ② [/review-spec + /review-qa] 병렬 크로스 체크
+  ③ 리뷰 루프 (Pass까지 자동 재작업, 최대 3회)
+  ★ 승인 1: 시나리오 리뷰 Pass 확인
+  ④ /write-scenario (Figma 보강)
+  ⑤ 팀장 Figma 직접 검수
+  ★ 승인 2: 시나리오 확정 → Confluence 업로드
   ↓
 Phase 1-B: TC 확정
-  ① /write-tc → ② /check-format
-  ③ [/review-spec + /review-qa] 병렬
-  ④ 리뷰 루프 (최대 3회) → ★ 승인 3: TC 확정
-  ⑤ Google Sheet 업로드
+  ① /write-tc (TC 작성)
+  ② /check-format (구조 검증, 실패 시 자동 재작업)
+  ③ [/review-spec + /review-qa] 병렬 크로스 체크
+  ④ 리뷰 루프 (Pass까지 자동 재작업, 최대 3회)
+  ★ 승인 3: TC 확정 → Google Sheet 업로드
   ↓
 Phase 3: 자동화
-  ① /assess-automation → ★ 승인 4
-  ② /write-test-code → GH Actions
-  ③ FAIL → /analyze-fail → ★ 승인 5
+  ① /assess-automation (자동화 검토)
+  ★ 승인 4: 자동화 구현 여부 결정 (거부 시 Phase 4로 건너뜀)
+  ② /write-test-code (테스트 코드 생성)
+  ③ GitHub Actions 실행 (수동)
+  ④ FAIL 발견 시 → /analyze-fail
+  ★ 승인 5: FAIL 분석 결과 확인 (FAIL 없으면 자동 통과)
   ↓
-Phase 4: 최종 보고 (★ 승인 6: 크로스 프로젝트 해당 시)
+Phase 4: 최종 보고
+  ① /report-project (리포트 생성)
+  ② 크로스 프로젝트 해당 시 → /analyze-impact
+  ★ 승인 6: 크로스 프로젝트 영향도 확인 (해당 시에만)
+  ③ 파이프라인 완료 요약 출력
 ```
 
 ### 기획서 변경 대응

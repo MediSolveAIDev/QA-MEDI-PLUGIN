@@ -112,41 +112,59 @@
 
 불일치 발견 시 Figma 기준으로 시나리오 반영, 변경 목록은 Orchestrator → 팀장에게 보고
 
-### 3.4 승인 포인트 (7개) + Slack DM 알림
-- 승인 포인트 도달 시 **QA_Agent Slack Bot → 팀장 DM**으로 알림 발송
+### 3.4 승인 포인트 (7개) + Slack 알림
+- 모든 승인 포인트에서 **Slack Webhook → 팀장 알림** 자동 발송 (기본 활성화)
+- `--no-slack` 옵션으로 비활성화 가능
 - 팀장이 세션을 보지 않아도 Slack으로 승인 요청 수신 가능
 
-0. **진행 계획 확인** - Orchestrator가 정보 수집 후 계획 보고 → 팀장 확인 후 실행
-1. **1차 시나리오 리뷰 Pass 확인** - Spec Reviewer + QA Reviewer 병렬 리뷰 Pass 후
-2. **Figma 검수 후 시나리오 확정** - 팀장이 Chrome + Claude in Chrome으로 직접 검수
-3. **TC 확정** - Format Checker (구조) + Spec Reviewer + QA Reviewer (내용 병렬) Pass 후
-4. **자동화 구현 여부 결정** - Automation Assessor 검토 후
-5. **FAIL 분석 결과** - 실제 버그 발견 시
-6. **크로스 프로젝트 영향도** - SSO 등 공통 변경 시
+| # | 승인 포인트 | Phase | 설명 |
+|---|------------|-------|------|
+| 0 | 진행 계획 확인 | 0 | Orchestrator 정보 수집 후 계획 보고 → 확인 후 실행 |
+| 1 | 시나리오 리뷰 Pass | 1-A | 리뷰 루프 통과 후 결과 확인 |
+| 2 | 시나리오 확정 | 1-A | Figma 보강 후 팀장 직접 검수 → 확정 |
+| 3 | TC 확정 | 1-B | 포맷 검증 + 리뷰 루프 통과 후 확정 |
+| 4 | 자동화 구현 여부 | 3 | Automation Assessor 검토 후 진행/거부 결정 |
+| 5 | FAIL 분석 결과 | 3 | 테스트 FAIL 발견 시에만 (FAIL 없으면 자동 통과) |
+| 6 | 크로스 프로젝트 영향도 | 4 | SSO 또는 공통 변경 해당 시에만 |
 
 ### 3.5 업무 흐름 요약
 
 ```
 Phase -1: 온보딩 (/setup → 환경 설정 완료)
   ↓
-Phase 0: 입력 수집 + 계획 확인 (★ 승인 0)
+Phase 0: 입력 수집 + 계획 확인
+  ・정보 수집 (프로젝트/버전/기획서)
+  ★ 승인 0: 진행 계획 확인
   ↓
 Phase 1-A: 시나리오 확정
-  ① Scenario Writer
+  ① Scenario Writer (시나리오 작성)
   ② [Spec Reviewer + QA Reviewer] 병렬 크로스 체크
-  ★ 승인 1: 시나리오 리뷰 Pass
-  ③ Scenario Writer (Figma 보강) → ④ 팀장 Figma 검수
-  ★ 승인 2: 시나리오 확정
+  ③ 리뷰 루프 (Pass까지 자동 재작업, 최대 3회)
+  ★ 승인 1: 시나리오 리뷰 Pass 확인
+  ④ Scenario Writer (Figma 보강)
+  ⑤ 팀장 Figma 직접 검수
+  ★ 승인 2: 시나리오 확정 → Confluence 업로드
   ↓
 Phase 1-B: TC 확정
-  ⑤ TC Writer → ⑥ Format Checker (구조)
-  ⑦ [Spec Reviewer + QA Reviewer] 병렬 크로스 체크
-  ★ 승인 3: TC 확정
+  ① TC Writer (TC 작성)
+  ② Format Checker (구조 검증, 실패 시 자동 재작업)
+  ③ [Spec Reviewer + QA Reviewer] 병렬 크로스 체크
+  ④ 리뷰 루프 (Pass까지 자동 재작업, 최대 3회)
+  ★ 승인 3: TC 확정 → Google Sheet 업로드
   ↓
 Phase 3: 자동화
-  Automation Assessor (★ 승인 4) → Test Coder → GH Actions → Fail Analyzer (★ 승인 5)
+  ① Automation Assessor (자동화 검토)
+  ★ 승인 4: 자동화 구현 여부 결정 (거부 시 Phase 4로 건너뜀)
+  ② Test Coder (테스트 코드 생성)
+  ③ GitHub Actions 실행 (수동)
+  ④ FAIL 발견 시 → Fail Analyzer
+  ★ 승인 5: FAIL 분석 결과 확인 (FAIL 없으면 자동 통과)
   ↓
-Phase 4: 최종 보고 (★ 승인 6: 크로스 프로젝트 해당 시)
+Phase 4: 최종 보고
+  ① Project Reporter (리포트 생성)
+  ② 크로스 프로젝트 해당 시 → Impact Analyzer
+  ★ 승인 6: 크로스 프로젝트 영향도 확인 (해당 시에만)
+  ③ 파이프라인 완료 요약 출력
 ```
 
 ### 3.6 Figma MCP 사용 규칙 (필수)

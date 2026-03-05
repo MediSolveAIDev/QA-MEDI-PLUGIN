@@ -2,7 +2,7 @@
 
 from orchestrator.cli import ask_approval, ask_url
 from orchestrator.config import CommonConfig, EnvConfig, ProjectConfig
-from orchestrator.notify.slack import send_approval_notification
+from orchestrator.notify.slack import send_approval_notification, send_progress_notification
 from orchestrator.review.gate import run_review_gate
 from orchestrator.skills.invoker import invoke_skill
 from orchestrator.state import PipelineState
@@ -50,6 +50,12 @@ def run_phase1a(
 
     state.artifacts["scenario"] = result.output_file or str(scenario_path)
     state.save()
+
+    send_progress_notification(
+        common_config, env_config, state,
+        "시나리오 작성 완료, 리뷰 진행합니다.",
+        no_slack=no_slack,
+    )
 
     # ---- Step 2-3: 리뷰 루프 ----
     log("INFO", "Phase 1-A Step 2: 리뷰 게이트")
