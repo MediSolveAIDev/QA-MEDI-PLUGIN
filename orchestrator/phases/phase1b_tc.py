@@ -56,12 +56,6 @@ def run_phase1b(
     state.artifacts["tc"] = tc_path
     state.save()
 
-    send_progress_notification(
-        common_config, env_config, state,
-        "TC 작성 완료, 포맷 검증 진행합니다.",
-        no_slack=no_slack,
-    )
-
     # ---- Step 2: 포맷 검증 ----
     for fmt_attempt in range(MAX_RETRIES + 1):
         log("INFO", f"Phase 1-B Step 2: 포맷 검증 (시도 {fmt_attempt + 1})")
@@ -80,7 +74,7 @@ def run_phase1b(
             log("INFO", "포맷 검증 PASS")
             send_progress_notification(
                 common_config, env_config, state,
-                "포맷 검증 Pass, 내용 리뷰 진행합니다.",
+                "TC 작성 완료, 포맷 검증 Pass. 내용 리뷰 진행합니다.",
                 no_slack=no_slack,
             )
             break
