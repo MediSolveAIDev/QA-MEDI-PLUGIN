@@ -26,12 +26,33 @@
 
 사용자가 `/run-pipeline` 또는 자연어로 업무를 요청하면, 아래 Python 명령을 실행한다.
 
-### 2.1 Claude Code 내 실행 (기본)
-```bash
-python -m orchestrator --project SAY --version v1.4.0 --feature "로그인" --spec-url "CONFLUENCE_URL" --auto-approve
+### 2.1 Claude Code 내 실행 (기본 — Phase별 승인)
+
+Claude Code에서는 **Phase 단위로 끊어서 실행**하고, 승인은 대화에서 받는다.
+`--auto-approve`를 사용하여 orchestrator 내부 input()을 우회하되, Phase별로 나눠 실행한다.
+
+**실행 흐름:**
+
 ```
-→ **Claude Code에서는 반드시 `--auto-approve`를 사용한다** (input() 대화형 입력 불가)
-→ 프로젝트/버전/기능명/기획서 URL은 CLI 인자로 전달 (config에서 자동 참조 가능한 값은 생략)
+① 정보 수집 (대화에서 프로젝트/버전/기획서 확인)
+   ↓
+② Phase 1-A 실행
+   python -m orchestrator --project SAY --version v1.4.0 --feature "로그인" --spec-url "PAGE_ID" --phase 1-A --auto-approve
+   → 결과를 사용자에게 보고 → "승인/재작업?" 질문
+   ↓
+③ 사용자 승인 → Phase 1-B 실행
+   python -m orchestrator --resume SAY_v1.4.0 --phase 1-B --auto-approve
+   → 결과 보고 → 승인 질문
+   ↓
+④ 이후 Phase도 동일하게 반복
+```
+
+**승인 포인트에서의 동작:**
+- Phase 실행 완료 후 결과를 대화에 출력
+- 사용자에게 "승인할까요? (승인 / 재작업 / 거부)" 질문
+- "승인" → 다음 Phase 실행
+- "재작업" → 같은 Phase 재실행
+- "거부" → 파이프라인 중단, 상태 저장
 
 ### 2.2 터미널 직접 실행 (대화형)
 ```bash
@@ -41,37 +62,39 @@ python -m orchestrator
 
 ### 2.3 특정 Phase만
 ```bash
-python -m orchestrator --phase 1-B
+python -m orchestrator --phase 1-B --auto-approve
 ```
 
 ### 2.4 중단된 파이프라인 재개
 ```bash
-python -m orchestrator --resume SAY_v1.4.0
+python -m orchestrator --resume SAY_v1.4.0 --auto-approve
 ```
 
 ### 2.5 복수 프로젝트 병렬
 ```bash
-python -m orchestrator --project SAY --project BAY --version v1.4.0
+python -m orchestrator --project SAY --project BAY --version v1.4.0 --auto-approve
 ```
 
 ### 2.6 기획서 변경 대응
 ```bash
-python -m orchestrator --resume SAY_v1.4.0 --spec-update NEW_SPEC_URL
+python -m orchestrator --resume SAY_v1.4.0 --spec-update NEW_SPEC_URL --auto-approve
 ```
 
 ---
 
 ## 3. 자연어 매핑
 
-사용자의 자연어 요청을 적절한 CLI 명령으로 변환한다:
+사용자의 자연어 요청을 Phase별 실행으로 변환한다:
 
-| 사용자 입력 | 실행 명령 |
-|------------|-----------|
-| "새 업무 줄게" | `python -m orchestrator` |
-| "SAY v1.4.0 처리해" | `python -m orchestrator --project SAY --version v1.4.0` |
-| "TC 리뷰해줘" | `python -m orchestrator --phase 1-B` |
-| "기획서 업데이트됐어" + URL | `python -m orchestrator --resume {ID} --spec-update {URL}` |
-| "이어서 해줘" | `python -m orchestrator --resume {최근 pipeline_id}` |
+| 사용자 입력 | 동작 |
+|------------|------|
+| "새 업무 줄게" | 정보 수집 → Phase 1-A부터 순차 실행 |
+| "SAY v1.4.0 처리해" | config에서 참조 → Phase 1-A부터 순차 실행 |
+| "TC 리뷰해줘" | `--phase 1-B --auto-approve` |
+| "기획서 업데이트됐어" + URL | `--resume {ID} --spec-update {URL} --auto-approve` |
+| "이어서 해줘" | `--resume {최근 pipeline_id} --auto-approve` |
+| "승인" / "ㅇㅇ" | 다음 Phase 실행 |
+| "재작업" | 같은 Phase 재실행 |
 
 ---
 
