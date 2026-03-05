@@ -51,7 +51,6 @@
 ```json
 {
   "slack": {
-    "bot_name": "QA_Agent",
     "team_lead_user_id": "",
     "webhook_url": ""
   },

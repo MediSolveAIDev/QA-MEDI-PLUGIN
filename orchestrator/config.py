@@ -26,7 +26,6 @@ class ProjectConfig:
 
 @dataclass
 class CommonConfig:
-    slack_bot_name: str
     slack_team_lead_user_id: str
     slack_webhook_url: str
     jira_base_url: str
@@ -55,7 +54,6 @@ def load_common_config() -> CommonConfig:
     with open(config_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     return CommonConfig(
-        slack_bot_name=data.get("slack", {}).get("bot_name", "QA_Agent"),
         slack_team_lead_user_id=data.get("slack", {}).get("team_lead_user_id", ""),
         slack_webhook_url=data.get("slack", {}).get("webhook_url", ""),
         jira_base_url=data.get("jira", {}).get("base_url", ""),
