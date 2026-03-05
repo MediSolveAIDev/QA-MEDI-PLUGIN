@@ -1,8 +1,24 @@
 """스킬별 프롬프트 템플릿. claude -p에 전달할 프롬프트 생성."""
 
+from orchestrator.utils.files import build_artifact_path
 
-def get_skill_prompt(skill_name: str, arguments: str, extra_context: str = "") -> str:
+
+def get_skill_prompt(
+    skill_name: str,
+    arguments: str,
+    extra_context: str = "",
+    project: str = "",
+    version: str = "",
+    feature: str = "",
+) -> str:
     """스킬 이름에 맞는 프롬프트 반환."""
+    # 산출물 저장 경로 생성
+    save_path = ""
+    if project and version and feature:
+        path = build_artifact_path(skill_name, project, version, feature)
+        if path:
+            save_path = str(path)
+
     builders = {
         "write-scenario": _write_scenario,
         "write-tc": _write_tc,
@@ -23,9 +39,14 @@ def get_skill_prompt(skill_name: str, arguments: str, extra_context: str = "") -
         prompt = f"/{skill_name} {arguments}"
         if extra_context:
             prompt += f"\n\n{extra_context}"
+        if save_path:
+            prompt += f"\n\n결과를 반드시 다음 경로에 저장하세요: {save_path}"
         return prompt
 
-    return builder(arguments, extra_context)
+    prompt = builder(arguments, extra_context)
+    if save_path:
+        prompt += f"\n\n결과를 반드시 다음 경로에 저장하세요: {save_path}"
+    return prompt
 
 
 def _write_scenario(args: str, extra: str) -> str:

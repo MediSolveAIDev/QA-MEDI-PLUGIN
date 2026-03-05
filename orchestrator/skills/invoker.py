@@ -38,7 +38,10 @@ def invoke_skill(
     """claude -p로 스킬 1회 호출."""
     from orchestrator.skills.prompts import get_skill_prompt
 
-    prompt = get_skill_prompt(skill_name, arguments, extra_context)
+    prompt = get_skill_prompt(
+        skill_name, arguments, extra_context,
+        project=state.project, version=state.version, feature=state.feature,
+    )
     if len(prompt) > MAX_PROMPT_LENGTH:
         log("WARN", f"프롬프트 길이 초과, {MAX_PROMPT_LENGTH}자로 절삭")
         prompt = prompt[:MAX_PROMPT_LENGTH]
