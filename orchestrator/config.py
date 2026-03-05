@@ -41,7 +41,6 @@ class EnvConfig:
     confluence_api_token: str
     confluence_email: str
     confluence_url: str
-    slack_bot_token: str
     slack_webhook_url: str
     figma_access_token: str
     jira_api_token: str
@@ -95,7 +94,6 @@ def load_env() -> EnvConfig:
         confluence_api_token=os.getenv("CONFLUENCE_API_TOKEN", ""),
         confluence_email=os.getenv("CONFLUENCE_EMAIL", ""),
         confluence_url=os.getenv("CONFLUENCE_URL", ""),
-        slack_bot_token=os.getenv("SLACK_BOT_TOKEN", ""),
         slack_webhook_url=os.getenv("SLACK_WEBHOOK_URL", ""),
         figma_access_token=os.getenv("FIGMA_ACCESS_TOKEN", ""),
         jira_api_token=os.getenv("JIRA_API_TOKEN", ""),
