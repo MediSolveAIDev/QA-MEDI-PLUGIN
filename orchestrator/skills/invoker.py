@@ -1,6 +1,8 @@
 """claude -p subprocess 래퍼. 스킬 단일/병렬 호출."""
 
+import json
 import os
+import re
 import subprocess
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -78,6 +80,11 @@ def invoke_skill(
 
         if result.returncode == 0:
             output_file = _detect_output_file(skill_name, state)
+            # 스킬이 파일을 직접 저장하지 않은 경우, stdout에서 JSON을 추출하여 저장
+            if not output_file:
+                output_file = _save_output_from_stdout(
+                    skill_name, state, result.stdout
+                )
             log_entry.action = "complete"
             log_entry.output_files = [output_file] if output_file else []
             log_entry.duration_seconds = duration
@@ -172,4 +179,68 @@ def _detect_output_file(skill_name: str, state: PipelineState) -> Optional[str]:
     )
     if expected_path and Path(expected_path).exists():
         return str(expected_path)
+    return None
+
+
+def _save_output_from_stdout(
+    skill_name: str, state: PipelineState, stdout: str
+) -> Optional[str]:
+    """stdout에서 JSON 블록을 추출하여 예상 경로에 저장."""
+    from orchestrator.utils.files import build_artifact_path
+
+    expected_path = build_artifact_path(
+        skill_name, state.project, state.version, state.feature
+    )
+    if not expected_path:
+        return None
+
+    # stdout에서 JSON 블록 추출 (```json ... ``` 또는 { ... } 최상위 블록)
+    json_data = _extract_json_from_text(stdout)
+    if not json_data:
+        return None
+
+    # 디렉토리 생성 후 저장
+    expected_path.parent.mkdir(parents=True, exist_ok=True)
+    expected_path.write_text(json_data, encoding="utf-8")
+    log("INFO", f"산출물 저장: {expected_path}")
+    return str(expected_path)
+
+
+def _extract_json_from_text(text: str) -> Optional[str]:
+    """텍스트에서 JSON 블록을 추출. 코드블록 우선, 없으면 최상위 {} 탐지."""
+    # 1) ```json ... ``` 코드블록에서 추출
+    pattern = r"```json\s*\n(.*?)\n\s*```"
+    matches = re.findall(pattern, text, re.DOTALL)
+    if matches:
+        # 가장 큰 JSON 블록 사용 (리뷰 결과가 보통 가장 큼)
+        candidate = max(matches, key=len)
+        try:
+            parsed = json.loads(candidate)
+            return json.dumps(parsed, ensure_ascii=False, indent=2)
+        except json.JSONDecodeError:
+            pass
+
+    # 2) 최상위 { ... } 블록 탐지
+    brace_depth = 0
+    start = -1
+    for i, ch in enumerate(text):
+        if ch == "{":
+            if brace_depth == 0:
+                start = i
+            brace_depth += 1
+        elif ch == "}":
+            brace_depth -= 1
+            if brace_depth == 0 and start >= 0:
+                candidate = text[start : i + 1]
+                try:
+                    parsed = json.loads(candidate)
+                    # 리뷰 결과 JSON인지 확인 (verdict 또는 reviewer 키 존재)
+                    if isinstance(parsed, dict) and (
+                        "verdict" in parsed or "reviewer" in parsed
+                    ):
+                        return json.dumps(parsed, ensure_ascii=False, indent=2)
+                except json.JSONDecodeError:
+                    pass
+                start = -1
+
     return None
