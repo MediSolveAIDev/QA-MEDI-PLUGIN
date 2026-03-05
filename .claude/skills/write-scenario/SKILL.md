@@ -213,10 +213,23 @@ data/scenarios/{프로젝트}_{버전}_{기능명}_scenario.md
 
 ### 업로드 규칙
 - 페이지 타이틀: `{제품명} v{버전} {기능명} 시나리오`
-- 본문: Section 0의 마크다운 구조와 동일
-- 목차: `## 목차` 부분을 Confluence TOC 매크로로 대체
-- `content_format: "markdown"` 사용 (신규 작성 또는 전체 덮어쓰기 시)
-- 히스토리 페이지 동시 업데이트
+- **`content_format: "storage"` 사용** (XHTML Storage Format으로 변환하여 업로드)
+- 마크다운 → Storage Format 변환 규칙:
+  - `# 헤딩` → `<h1>헤딩</h1>`
+  - `## 헤딩` → `<h2>헤딩</h2>`
+  - `### 헤딩` → `<h3>헤딩</h3>`
+  - 불릿 리스트 → `<ul><li>...</li></ul>`
+  - 번호 리스트 → `<ol><li>...</li></ol>`
+  - 볼드 `**텍스트**` → `<strong>텍스트</strong>`
+  - 구분선 `---` → `<hr />`
+  - 테이블 → `<table><tr><th>...</th></tr><tr><td>...</td></tr></table>`
+- 목차: `## 목차` 부분을 아래 TOC 매크로로 대체
+  ```xml
+  <ac:structured-macro ac:name="toc">
+    <ac:parameter ac:name="maxLevel">2</ac:parameter>
+  </ac:structured-macro>
+  ```
+- 업로드 완료 후 변경 내역 요약을 출력 (히스토리 페이지는 팀장이 직접 수정)
 
 ### Confluence 페이지 본문 구성
 
@@ -247,15 +260,14 @@ data/scenarios/{프로젝트}_{버전}_{기능명}_scenario.md
 - [ ] 정보 테이블 버전/작성일/참고 문서 업데이트
 - [ ] 목차 섹션 업데이트 (추가/삭제 반영)
 - [ ] 시나리오 내용 업데이트
-- [ ] 히스토리 페이지 업데이트
+- [ ] 변경 내역 요약 출력 (추가/수정/삭제된 시나리오 목록)
 
 ---
 
 ## 4. Confluence MCP 사용 규칙
 
-- **부분 수정 시 storage format 필수**: `content_format: "storage"` 사용
-- **마크다운 사용 금지 (부분 수정 시)**: 기존 서식 초기화됨
-- **전체 페이지 신규 작성 시에만 마크다운 허용**
+- **항상 storage format 사용**: `content_format: "storage"` (신규/수정 모두)
+- **마크다운으로 직접 업로드 금지**: TOC 매크로 미동작, 서식 깨짐 원인
 
 ### 부분 수정 절차
 ```
