@@ -185,7 +185,7 @@ def _detect_output_file(skill_name: str, state: PipelineState) -> Optional[str]:
 def _save_output_from_stdout(
     skill_name: str, state: PipelineState, stdout: str
 ) -> Optional[str]:
-    """stdout에서 JSON 블록을 추출하여 예상 경로에 저장."""
+    """stdout에서 산출물을 추출하여 예상 경로에 저장."""
     from orchestrator.utils.files import build_artifact_path
 
     expected_path = build_artifact_path(
@@ -194,14 +194,23 @@ def _save_output_from_stdout(
     if not expected_path:
         return None
 
-    # stdout에서 JSON 블록 추출 (```json ... ``` 또는 { ... } 최상위 블록)
-    json_data = _extract_json_from_text(stdout)
-    if not json_data:
+    suffix = expected_path.suffix.lower()
+
+    if suffix == ".json":
+        content = _extract_json_from_text(stdout)
+    elif suffix == ".md":
+        content = _extract_markdown_from_text(stdout)
+    elif suffix == ".py":
+        content = _extract_code_from_text(stdout, "python")
+    else:
+        content = None
+
+    if not content:
         return None
 
     # 디렉토리 생성 후 저장
     expected_path.parent.mkdir(parents=True, exist_ok=True)
-    expected_path.write_text(json_data, encoding="utf-8")
+    expected_path.write_text(content, encoding="utf-8")
     log("INFO", f"산출물 저장: {expected_path}")
     return str(expected_path)
 
@@ -243,4 +252,35 @@ def _extract_json_from_text(text: str) -> Optional[str]:
                     pass
                 start = -1
 
+    return None
+
+
+def _extract_markdown_from_text(text: str) -> Optional[str]:
+    """stdout에서 마크다운 콘텐츠를 추출. ```markdown 코드블록 우선, 없으면 헤딩 기반 추출."""
+    # 1) ```markdown ... ``` 코드블록
+    pattern = r"```markdown\s*\n(.*?)\n\s*```"
+    matches = re.findall(pattern, text, re.DOTALL)
+    if matches:
+        return max(matches, key=len).strip()
+
+    # 2) 마크다운 헤딩(#)이 포함된 구간 추출
+    lines = text.split("\n")
+    md_start = -1
+    for i, line in enumerate(lines):
+        if re.match(r"^#{1,3}\s+", line):
+            md_start = i
+            break
+
+    if md_start >= 0:
+        return "\n".join(lines[md_start:]).strip()
+
+    return None
+
+
+def _extract_code_from_text(text: str, language: str) -> Optional[str]:
+    """stdout에서 코드 블록을 추출."""
+    pattern = rf"```{language}\s*\n(.*?)\n\s*```"
+    matches = re.findall(pattern, text, re.DOTALL)
+    if matches:
+        return max(matches, key=len).strip()
     return None
