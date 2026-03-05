@@ -1,5 +1,6 @@
 """claude -p subprocess 래퍼. 스킬 단일/병렬 호출."""
 
+import os
 import subprocess
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -60,6 +61,9 @@ def invoke_skill(
 
         log("INFO", f"스킬 호출: /{skill_name}", {"phase": phase})
 
+        env = os.environ.copy()
+        env.pop("CLAUDECODE", None)
+
         result = subprocess.run(
             cmd,
             capture_output=True,
@@ -67,6 +71,7 @@ def invoke_skill(
             encoding="utf-8",
             timeout=timeout_seconds,
             cwd=str(BASE_DIR),
+            env=env,
         )
 
         duration = time.time() - start_time

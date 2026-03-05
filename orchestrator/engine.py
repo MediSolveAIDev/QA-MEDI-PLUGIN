@@ -106,7 +106,7 @@ class PipelineEngine:
             phase_fn(state, project_config, self.common_config, self.env_config, no_slack)
             return
 
-        # 전체 실행
+        # 전체 실행 (--auto-approve 시 Phase 간 승인 대기)
         for phase_name, phase_fn in phases[start_idx:]:
             state.current_phase = phase_name
             state.status = "in_progress"
@@ -126,6 +126,13 @@ class PipelineEngine:
                 state.status = "failed"
                 state.save()
                 log("ERROR", f"Phase {phase_name}에서 거부됨")
+                return
+
+            # --auto-approve: Phase 완료 후 상태 저장하고 종료 (다음 Phase는 --resume으로)
+            if self.args.auto_approve:
+                state.status = "awaiting_approval"
+                state.save()
+                log("INFO", f"Phase {phase_name} 완료. 승인 대기 중. 재개: --resume {state.pipeline_id}")
                 return
 
         state.status = "completed"
