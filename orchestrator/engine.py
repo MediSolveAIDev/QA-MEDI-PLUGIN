@@ -4,7 +4,7 @@ import asyncio
 from datetime import datetime
 from typing import Optional
 
-from orchestrator.cli import ask_input
+from orchestrator.cli import ask_input, set_auto_approve
 from orchestrator.config import (
     CommonConfig,
     EnvConfig,
@@ -39,6 +39,8 @@ class PipelineEngine:
     def run(self):
         """단일 프로젝트 파이프라인 실행."""
         self._preflight_check()
+        if self.args.auto_approve:
+            set_auto_approve(True)
         no_slack = self.args.no_slack
 
         # 기획서 변경 대응

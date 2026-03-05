@@ -1,6 +1,16 @@
 # /run-pipeline - Orchestrator
 
 > Python Orchestrator를 실행하여 에이전트 파이프라인을 자동 운영합니다.
+>
+> **자연어 트리거**: 아래 패턴이 감지되면 이 스킬을 즉시 실행한다.
+> - "새 업무 줄게", "새 업무", "업무 줄게", "일 줄게"
+> - "파이프라인 실행", "파이프라인 시작", "파이프라인 돌려"
+> - "{프로젝트명} 처리해", "{프로젝트명} 시작해"
+> - "시나리오부터 해줘", "전체 진행해줘"
+> - "이어서 해줘", "재개해줘", "이어서 진행"
+> - "기획서 업데이트됐어", "기획 변경됐어"
+>
+> **중요**: 위 패턴 감지 시 사용자에게 "어떤 작업을 할까요?" 같은 선택지를 제시하지 않는다. config/projects/*.json에서 프로젝트 정보를 자동 참조하고, 부족한 정보만 질문한 뒤 바로 파이프라인을 실행한다.
 
 ---
 
@@ -16,16 +26,18 @@
 
 사용자가 `/run-pipeline` 또는 자연어로 업무를 요청하면, 아래 Python 명령을 실행한다.
 
-### 2.1 전체 파이프라인
+### 2.1 Claude Code 내 실행 (기본)
+```bash
+python -m orchestrator --project SAY --version v1.4.0 --feature "로그인" --spec-url "CONFLUENCE_URL" --auto-approve
+```
+→ **Claude Code에서는 반드시 `--auto-approve`를 사용한다** (input() 대화형 입력 불가)
+→ 프로젝트/버전/기능명/기획서 URL은 CLI 인자로 전달 (config에서 자동 참조 가능한 값은 생략)
+
+### 2.2 터미널 직접 실행 (대화형)
 ```bash
 python -m orchestrator
 ```
-→ 대화형으로 프로젝트, 버전, 기능명, 기획서 URL을 수집하여 전체 파이프라인 실행
-
-### 2.2 정보 지정 실행
-```bash
-python -m orchestrator --project SAY --version v1.4.0 --feature "로그인" --spec-url "CONFLUENCE_URL"
-```
+→ 터미널에서 직접 실행 시 대화형으로 정보 수집 + 승인 포인트에서 수동 승인
 
 ### 2.3 특정 Phase만
 ```bash

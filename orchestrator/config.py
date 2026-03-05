@@ -116,8 +116,8 @@ def validate_setup() -> list[str]:
         return issues
 
     common = load_common_config()
-    if not common.slack_team_lead_user_id:
-        issues.append("slack.team_lead_user_id가 비어있습니다. /setup을 실행해주세요.")
+    if not common.slack_webhook_url:
+        issues.append("slack.webhook_url이 비어있습니다. /setup을 실행해주세요.")
     if not common.confluence_base_url:
         issues.append("confluence.base_url이 비어있습니다. /setup을 실행해주세요.")
 

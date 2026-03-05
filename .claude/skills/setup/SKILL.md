@@ -67,9 +67,11 @@
 🔧 공통 환경 설정을 시작합니다.
 
 1. Slack 설정
-   - Slack Bot Token이 있나요? (Y/N)
-   - 팀장 Slack User ID: (예: U0123456789)
    - Webhook URL: (예: https://hooks.slack.com/services/xxx/yyy/zzz)
+     → 승인 요청 알림이 이 채널로 발송됩니다
+     → 확인 방법: Slack 앱 관리(https://api.slack.com/apps) → 앱 선택
+       → Incoming Webhooks → Webhook URL 복사
+       (앱이 없으면 Create New App → Incoming Webhooks 활성화 → Add New Webhook to Workspace)
 
 2. JIRA 설정
    - JIRA URL: (예: https://your-domain.atlassian.net)
@@ -157,6 +159,32 @@
 - `.env`가 이미 있으면 빈 값만 표시하고 해당 항목만 입력받는다
 - API 토큰 입력 시 마스킹 안내 (화면에 노출되므로 주의)
 - `.env`는 `.gitignore`에 포함 확인
+
+### Step 3-1: Google Sheets 인증 파일 확인
+
+```
+📋 Google Sheets 인증 파일을 확인합니다.
+
+credentials/ 폴더 상태:
+  ✅ credentials.json (OAuth 클라이언트 - 팀 공통)
+  ❌ token.json (개인 인증 토큰 - 최초 실행 시 자동 생성)
+```
+
+**처리 규칙:**
+- `credentials/credentials.json` 존재 여부 확인
+- 파일이 있으면 ✅ 표시
+- 파일이 없으면 아래 안내 출력:
+  ```
+  ⚠️ credentials/credentials.json 파일이 없습니다.
+
+  아래 공유 드라이브에서 credentials.json을 다운로드해주세요:
+  📂 QA_업무자료 > 1.QA 공유 자료 > 자동화 > 공통 환경변수 > 00.QA-agent 세팅용
+
+  다운로드한 파일을 프로젝트 루트의 credentials/ 폴더에 저장해주세요.
+  (폴더가 없으면 생성)
+  ```
+- `token.json`은 공유 불필요. 최초 Google Sheets 업로드 실행 시 브라우저 인증 팝업이 뜨고, 본인 Google 계정으로 로그인하면 자동 생성됨
+- 파일 없어도 다음 단계로 진행 가능 (Google Sheets 업로드만 비활성)
 
 ### Step 4: 연결 테스트 (선택)
 

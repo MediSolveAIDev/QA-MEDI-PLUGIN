@@ -26,6 +26,9 @@ Thumbs.db
 .claude/settings.local.json
 .claude/memory/
 
+# Google Sheets 인증 파일
+credentials/
+
 # 로컬 작업 디렉토리 (/init이 생성하는 폴더)
 config/
 data/

@@ -34,7 +34,21 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="Slack 알림 비활성화",
     )
+    parser.add_argument(
+        "--auto-approve",
+        action="store_true",
+        help="모든 승인 포인트 자동 통과 (Claude Code 내 실행 시 사용)",
+    )
     return parser.parse_args(argv)
+
+
+_auto_approve = False
+
+
+def set_auto_approve(enabled: bool):
+    """Claude Code 내 실행 시 자동 승인 모드 설정."""
+    global _auto_approve
+    _auto_approve = enabled
 
 
 def ask_approval(approval_id: str, description: str, details: str = "") -> str:
@@ -44,6 +58,9 @@ def ask_approval(approval_id: str, description: str, details: str = "") -> str:
     print(f"{'='*60}")
     if details:
         print(details)
+    if _auto_approve:
+        print("  → 자동 승인 (--auto-approve)")
+        return "approved"
     print()
     while True:
         choice = input("  [A]승인 / [R]거부 / [W]재작업? ").strip().upper()
@@ -58,12 +75,16 @@ def ask_approval(approval_id: str, description: str, details: str = "") -> str:
 
 def ask_url(prompt: str) -> Optional[str]:
     """URL 입력. 빈 값이면 None 반환."""
+    if _auto_approve:
+        return None
     url = input(f"  {prompt} (Enter로 건너뛰기): ").strip()
     return url if url else None
 
 
 def ask_input(prompt: str, required: bool = False) -> str:
     """자유 입력."""
+    if _auto_approve:
+        return ""
     while True:
         value = input(f"  {prompt}: ").strip()
         if value or not required:
@@ -76,6 +97,10 @@ def ask_choice(prompt: str, options: list[tuple[str, str]]) -> str:
     print(f"\n  {prompt}")
     for key, label in options:
         print(f"    [{key}] {label}")
+    if _auto_approve:
+        first_key = options[0][0]
+        print(f"  → 자동 선택: {first_key} (--auto-approve)")
+        return first_key
     valid_keys = [k for k, _ in options]
     while True:
         choice = input("  선택: ").strip().upper()

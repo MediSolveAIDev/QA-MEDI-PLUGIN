@@ -47,33 +47,38 @@ data/tc/{프로젝트}_{버전}_{기능명}_tc.json
   "test_cases": [
     {
       "id": "TC-001",
-      "section": "1. 프로세스 유형",
-      "depth_2": "WEB-상담에이전트",
-      "depth_3": "화면 구성",
-      "depth_4": "상담 프로세스 유형",
-      "depth_5": "초진 고객인 경우",
+      "jira_component": "상담",
+      "depth_1": "프로세스 가이드",
+      "depth_2": "화면 구성",
+      "depth_3": "상담 프로세스 유형",
+      "depth_4": "초진 고객인 경우",
+      "depth_5": "",
       "depth_6": "",
-      "depth_7": "",
-      "precondition": "상담 시작 화면 진입",
-      "action": "초진 고객으로 상담 시작",
-      "expected": "초진 프로세스(11단계) 자동 적용됨\n- 단계 순서: 첫인사, 아이스브레이킹, ...",
       "priority": "P2",
+      "expected": "초진 프로세스(11단계) 자동 적용됨\n- 단계 순서: 첫인사, 아이스브레이킹, ...",
       "note": ""
     }
   ]
 }
 ```
 
-### Depth 컬럼 설명
+### 컬럼 설명 (Google Sheets 템플릿 기준)
 
-| Depth | 용도 | 예시 |
-|-------|------|------|
-| depth_2 | 제품/플랫폼 | WEB-상담에이전트, Admin, Mobile |
-| depth_3 | 화면/영역 | 화면 구성, 녹음 진행 상태, 장애 발생 |
-| depth_4 | UI 요소/테스트항목 | [AI 가이드 등록] 버튼, 상태 드롭다운 |
-| depth_5 | 상태/조건 | Default, Tap, 미입력 상태 |
-| depth_6 | 세부 분기 | 활성화 선택, 검색 결과 있는 경우 |
-| depth_7 | 추가 조건의 동작 | 토글 Tap, 문구 확인 |
+| 컬럼 | JSON 키 | 용도 | 예시 |
+|------|---------|------|------|
+| JIRA 컴포넌트 | jira_component | JIRA 컴포넌트 | 제품, 기타, 상담 |
+| 1 Depth | depth_1 | 대분류/기능 | 제품 관리, SSO 로그인 화면 |
+| 2 Depth | depth_2 | 화면/영역 | 검색 영역, 로그인 상태 |
+| 3 Depth | depth_3 | UI 요소/테스트항목 | 구분 선택 드롭다운, [로그인] 버튼 |
+| 4 Depth | depth_4 | 상태/조건 | Default, Tap, 미입력 상태 |
+| 5 Depth | depth_5 | 세부 분기 | 다중 선택, 검색 결과 있는 경우 |
+| 6 Depth | depth_6 | 추가 조건의 동작 | 토글 Tap, 문구 확인 |
+| Priority | priority | 우선순위 | P1, P2, P3, 자동화 |
+| Expected Result | expected | 기대 결과 | 화면 진입됨, 리스트 노출됨 |
+| 비고 | note | 비고 (선택) | 복수 지점 데이터 필요 |
+
+> **참조 템플릿:** `.claude/skills/write-tc/tc_template.csv`, `.claude/skills/write-tc/tc_template2.csv`
+> TC 작성, 리뷰, Google Sheets 업로드 모두 이 컬럼 구조를 따른다.
 
 ### 활용 방법
 
@@ -554,15 +559,16 @@ TC 작성 완료 후 아래 항목 점검:
 
 ```json
 {
-  "id": "TC-{섹션}-{번호}",
-  "depth_3": "화면/영역",
-  "depth_4": "UI 요소",
-  "depth_5": "상태/조건",
-  "depth_6": "세부 분기",
-  "precondition": "사전조건 (화면, 권한, 데이터)",
-  "action": "수행 동작",
-  "expected": "기대 결과",
+  "id": "TC-001",
+  "jira_component": "JIRA 컴포넌트",
+  "depth_1": "대분류/기능",
+  "depth_2": "화면/영역",
+  "depth_3": "UI 요소",
+  "depth_4": "상태/조건",
+  "depth_5": "세부 분기",
+  "depth_6": "추가 조건",
   "priority": "P1/P2/P3",
+  "expected": "기대 결과",
   "note": "비고 (선택)"
 }
 ```
@@ -571,9 +577,9 @@ TC 작성 완료 후 아래 항목 점검:
 
 TC JSON을 Confluence 또는 Google Sheets에 업로드할 때는 테이블 형식으로 변환:
 
-| 2 Depth | 3 Depth | 4 Depth | 5 Depth | 6 Depth | Priority | Expected Result |
-|---------|---------|---------|---------|---------|----------|-----------------|
-| {depth_2} | {depth_3} | {depth_4} | {depth_5} | {depth_6} | {priority} | {expected} |
+| JIRA 컴포넌트 | 1 Depth | 2 Depth | 3 Depth | 4 Depth | 5 Depth | 6 Depth | Priority | Expected Result | 비고 |
+|--------------|---------|---------|---------|---------|---------|---------|----------|-----------------|------|
+| {jira_component} | {depth_1} | {depth_2} | {depth_3} | {depth_4} | {depth_5} | {depth_6} | {priority} | {expected} | {note} |
 
 ### Google Sheets 업로드 시 양식 참조
 

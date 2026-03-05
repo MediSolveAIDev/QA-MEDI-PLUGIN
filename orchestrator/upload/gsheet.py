@@ -59,9 +59,9 @@ def upload_tc_to_gsheet(
 
         # 헤더 (tc_template.csv 구조)
         headers = [
-            "Section", "2 Depth", "3 Depth", "4 Depth", "5 Depth",
-            "6 Depth", "7 Depth", "Precondition", "Action",
-            "Expected Result", "Priority", "Note",
+            "JIRA 컴포넌트", "1 Depth", "2 Depth", "3 Depth",
+            "4 Depth", "5 Depth", "6 Depth", "Priority",
+            "Expected Result", "비고",
         ]
 
         rows = [headers]
@@ -69,17 +69,15 @@ def upload_tc_to_gsheet(
 
         for tc in test_cases:
             row = [
-                tc.get("section", ""),
+                tc.get("jira_component", ""),
+                tc.get("depth_1", ""),
                 tc.get("depth_2", ""),
                 tc.get("depth_3", ""),
                 tc.get("depth_4", ""),
                 tc.get("depth_5", ""),
                 tc.get("depth_6", ""),
-                tc.get("depth_7", ""),
-                tc.get("precondition", ""),
-                tc.get("action", ""),
-                tc.get("expected", ""),
                 tc.get("priority", ""),
+                tc.get("expected", ""),
                 tc.get("note", ""),
             ]
             rows.append(row)
@@ -95,15 +93,17 @@ def upload_tc_to_gsheet(
 
 
 def _get_gspread_client():
-    """gspread 인증 클라이언트. 서비스 계정 또는 OAuth."""
+    """gspread 인증 클라이언트. credentials/ 폴더의 OAuth 파일 사용."""
     import gspread
 
-    sa_path = BASE_DIR / "config" / "google_service_account.json"
-    if sa_path.exists():
-        return gspread.service_account(filename=str(sa_path))
+    creds_dir = BASE_DIR / "credentials"
+    creds_path = creds_dir / "credentials.json"
+    token_path = creds_dir / "token.json"
 
-    creds_path = BASE_DIR / "config" / "google_credentials.json"
     if creds_path.exists():
-        return gspread.oauth(credentials_filename=str(creds_path))
+        return gspread.oauth(
+            credentials_filename=str(creds_path),
+            authorized_user_filename=str(token_path),
+        )
 
     return None

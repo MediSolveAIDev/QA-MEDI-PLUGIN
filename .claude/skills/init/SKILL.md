@@ -224,7 +224,18 @@
 | **기획자 확인 필요** | Figma와 기획서 모두 불명확한 항목 있음 |
 ```
 
-### 4.6 .gitignore (없을 때만 생성)
+### 4.6 .env (없을 때만 생성)
+
+```
+SLACK_WEBHOOK_URL=
+JIRA_API_TOKEN=
+CONFLUENCE_URL=
+CONFLUENCE_EMAIL=
+CONFLUENCE_API_TOKEN=
+FIGMA_ACCESS_TOKEN=
+```
+
+### 4.7 .gitignore (없을 때만 생성)
 
 ```
 .env
@@ -256,6 +267,7 @@ pip install -r requirements.txt
 2. 폴더 생성 시 `mkdir -p` 방식으로 중간 경로도 함께 생성
 3. 의존성 설치 (`pip install -r requirements.txt`)
 4. 모든 작업 완료 후 결과를 요약 출력
+5. **초기화 완료 후 `/setup`을 자동으로 이어서 실행** (온보딩 원스텝 완료)
 
 ---
 

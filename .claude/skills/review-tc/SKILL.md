@@ -77,17 +77,15 @@ TC 리뷰 시 아래 문서를 기준으로 검토한다:
   "test_cases": [
     {
       "id": "TC-001",
-      "section": "1. AI 가이드",
-      "depth_2": "Admin",
-      "depth_3": "화면 구성",
-      "depth_4": "UI 요소명",
-      "depth_5": "상태/조건",
-      "depth_6": "세부 분기",
-      "depth_7": "",
-      "precondition": "사전조건",
-      "action": "수행 동작",
-      "expected": "기대 결과",
+      "jira_component": "AI 가이드",
+      "depth_1": "가이드 관리",
+      "depth_2": "화면 구성",
+      "depth_3": "UI 요소명",
+      "depth_4": "상태/조건",
+      "depth_5": "세부 분기",
+      "depth_6": "",
       "priority": "P2",
+      "expected": "기대 결과",
       "note": ""
     }
   ]
