@@ -61,14 +61,18 @@ def upload_tc_to_gsheet(
         headers = [
             "JIRA 컴포넌트", "1 Depth", "2 Depth", "3 Depth",
             "4 Depth", "5 Depth", "6 Depth", "Priority",
-            "Expected Result", "비고",
+            "Expected Result", "Result", "담당자", "Date",
+            "Test Version", "BTS ID", "비고",
         ]
 
         rows = [headers]
         test_cases = tc_data.get("test_cases", [])
 
+        # 이전 행의 depth 값 (중복 제거용)
+        prev_depths = [""] * 7
+
         for tc in test_cases:
-            row = [
+            depths = [
                 tc.get("jira_component", ""),
                 tc.get("depth_1", ""),
                 tc.get("depth_2", ""),
@@ -76,8 +80,27 @@ def upload_tc_to_gsheet(
                 tc.get("depth_4", ""),
                 tc.get("depth_5", ""),
                 tc.get("depth_6", ""),
+            ]
+
+            # 셀 병합 패턴: 상위 depth가 변경된 지점부터만 값 표시
+            display = list(depths)
+            changed = False
+            for i in range(len(depths)):
+                if changed or depths[i] != prev_depths[i]:
+                    changed = True
+                else:
+                    display[i] = ""
+
+            prev_depths = list(depths)
+
+            row = display + [
                 tc.get("priority", ""),
                 tc.get("expected", ""),
+                "",  # Result
+                "",  # 담당자
+                "",  # Date
+                "",  # Test Version
+                "",  # BTS ID
                 tc.get("note", ""),
             ]
             rows.append(row)
