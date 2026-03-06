@@ -112,7 +112,7 @@ def run_phase1b(
         ("review-qa", tc_path),
     ]
 
-    passed, review_results = run_review_gate(
+    passed, review_results, latest_artifact = run_review_gate(
         writer_skill="write-tc",
         writer_args=scenario_file,
         reviewer_skills=review_skills,
@@ -120,6 +120,12 @@ def run_phase1b(
         phase="1-B",
         rework_prompt_builder=rework_builder,
     )
+
+    # 재작업으로 TC가 갱신되었으면 state 반영
+    if latest_artifact:
+        tc_path = latest_artifact
+        state.artifacts["tc"] = tc_path
+        state.save()
 
     if not passed:
         log("WARN", "TC 리뷰 게이트 실패. 에스컬레이션.")

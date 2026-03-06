@@ -71,7 +71,7 @@ def run_phase1a(
         ("review-qa", scenario_file),
     ]
 
-    passed, review_results = run_review_gate(
+    passed, review_results, latest_artifact = run_review_gate(
         writer_skill="write-scenario",
         writer_args=state.spec_url,
         reviewer_skills=review_skills,
@@ -79,6 +79,11 @@ def run_phase1a(
         phase="1-A",
         rework_prompt_builder=rework_builder,
     )
+
+    # 재작업으로 산출물이 갱신되었으면 state 반영
+    if latest_artifact:
+        state.artifacts["scenario"] = latest_artifact
+        state.save()
 
     if not passed:
         log("WARN", "리뷰 게이트 실패. 에스컬레이션.")
