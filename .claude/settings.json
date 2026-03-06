@@ -19,7 +19,10 @@
       "mcp__playwright__browser_run_code",
       "mcp__playwright__browser_snapshot",
       "mcp__playwright__browser_click",
-      "mcp__playwright__browser_press_key"
+      "mcp__playwright__browser_press_key",
+      "mcp__atlassian__*",
+      "mcp__google-sheets__*",
+      "mcp__figma__*"
     ]
   }
 }
