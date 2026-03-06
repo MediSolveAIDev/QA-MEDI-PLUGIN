@@ -38,6 +38,10 @@ class PipelineEngine:
 
     def run(self):
         """단일 프로젝트 파이프라인 실행."""
+        if self.args.status:
+            self.show_status(self.args.status)
+            return
+
         self._preflight_check()
         if self.args.auto_approve:
             set_auto_approve(True)
@@ -184,6 +188,85 @@ class PipelineEngine:
         if result == "tc_update":
             # Phase 1-B부터 재실행
             self._run_from_phase(state, project_config, "1-B", no_slack)
+
+    def show_status(self, pipeline_id: str):
+        """파이프라인 진행 상황 조회."""
+        from orchestrator.utils.files import BASE_DIR
+
+        # "latest"면 가장 최근 파이프라인 파일 찾기
+        if pipeline_id == "latest":
+            pipeline_dir = BASE_DIR / "data" / "pipeline"
+            if not pipeline_dir.exists():
+                print("  파이프라인 기록이 없습니다.")
+                return
+            files = sorted(pipeline_dir.glob("*_pipeline.json"), key=lambda f: f.stat().st_mtime, reverse=True)
+            if not files:
+                print("  파이프라인 기록이 없습니다.")
+                return
+            pipeline_id = files[0].stem.replace("_pipeline", "")
+
+        try:
+            state = PipelineState.load(pipeline_id)
+        except FileNotFoundError:
+            print(f"  파이프라인을 찾을 수 없습니다: {pipeline_id}")
+            return
+
+        phase_names = {
+            "0": "입력 수집 + 계획 확인",
+            "1-A": "시나리오 확정",
+            "1-B": "TC 확정",
+            "3": "자동화",
+            "4": "최종 보고",
+        }
+
+        approval_names = {
+            "0_plan": "진행 계획",
+            "1_scenario_review": "시나리오 리뷰",
+            "2_scenario_final": "시나리오 확정",
+            "3_tc_final": "TC 확정",
+            "4_automation": "자동화 구현",
+            "5_fail_analysis": "FAIL 분석",
+            "6_cross_project": "크로스 프로젝트",
+        }
+
+        status_icon = {
+            "approved": "✅", "rejected": "❌", "rework": "🔁",
+            "pending": "⏳", None: "⬜",
+        }
+
+        current_phase_name = phase_names.get(state.current_phase, state.current_phase)
+        print(f"\n{'='*60}")
+        print(f"  [{state.project} {state.version}] Phase {state.current_phase}: {current_phase_name}")
+        print(f"  상태: {state.status} | 기능: {state.feature}")
+        print(f"{'='*60}")
+
+        print("\n  승인:")
+        for key, name in approval_names.items():
+            status = state.approvals.get(key)
+            icon = status_icon.get(status, "⬜")
+            label = status or "미진행"
+            print(f"    {icon} 승인 {key.split('_')[0]}: {name} - {label}")
+
+        artifacts_with_value = {k: v for k, v in state.artifacts.items() if v}
+        if artifacts_with_value:
+            print("\n  산출물:")
+            for key, path in artifacts_with_value.items():
+                print(f"    {key}: {path}")
+
+        reworks = {k: v for k, v in state.rework_count.items() if v > 0}
+        if reworks:
+            print("\n  재작업:")
+            for skill, count in reworks.items():
+                print(f"    {skill}: {count}회")
+
+        if state.upload_urls.get("scenario_confluence"):
+            print(f"\n  Confluence: {state.upload_urls['scenario_confluence']}")
+        if state.upload_urls.get("tc_gsheet"):
+            print(f"  Google Sheet: {state.upload_urls['tc_gsheet']}")
+
+        print(f"\n  시작: {state.started_at}")
+        print(f"  갱신: {state.updated_at}")
+        print(f"{'='*60}")
 
     async def run_parallel(self, projects: list[str]):
         """복수 프로젝트 병렬 실행."""

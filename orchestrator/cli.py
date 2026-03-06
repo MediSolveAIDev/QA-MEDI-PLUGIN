@@ -30,6 +30,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="기획서 변경 대응: 새 기획서 URL",
     )
     parser.add_argument(
+        "--status",
+        metavar="PIPELINE_ID",
+        nargs="?",
+        const="latest",
+        help="파이프라인 진행 상황 조회 (예: SAY_v1.4.0, 생략 시 최근)",
+    )
+    parser.add_argument(
         "--no-slack",
         action="store_true",
         help="Slack 알림 비활성화",
