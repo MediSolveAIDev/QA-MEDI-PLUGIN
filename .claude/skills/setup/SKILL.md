@@ -86,6 +86,11 @@
 4. GitHub 설정
    - Organization: (기본값: MediSolveAIDev)
    - Actions Repo:
+
+5. Orchestrator 설정
+   - 별칭 [선택]: (자유 입력)
+     → 설정하면 별칭으로 Orchestrator 호출 가능
+     → 미설정 시 /run-pipeline 또는 자연어 패턴으로만 호출
 ```
 
 **처리 규칙:**
