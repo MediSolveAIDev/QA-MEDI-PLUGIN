@@ -47,3 +47,9 @@ docs/
 # IDE
 .vscode/
 .idea/
+
+
+
+claude-connector-plugin/
+figma_output/
+tools/

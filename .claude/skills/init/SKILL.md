@@ -68,9 +68,13 @@
     "org": "MediSolveAIDev",
     "actions_repo": ""
   },
+  "orchestrator": {
+    "nickname": ""
+  },
   "env_file": {
     "_comment": "민감 정보는 .env에서 관리. 아래는 필요한 키 목록.",
     "required_keys": [
+      "SLACK_WEBHOOK_APPROVAL",
       "SLACK_WEBHOOK_URL",
       "JIRA_API_TOKEN",
       "CONFLUENCE_API_TOKEN",
