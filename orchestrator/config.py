@@ -22,6 +22,7 @@ class ProjectConfig:
     automation_framework: str
     automation_test_repo: str
     automation_base_url: str
+    gsheet_url: str
 
 
 @dataclass
@@ -83,6 +84,7 @@ def load_project_config(project_code: str) -> ProjectConfig:
         automation_framework=data.get("automation", {}).get("framework", "pytest"),
         automation_test_repo=data.get("automation", {}).get("test_repo", ""),
         automation_base_url=data.get("automation", {}).get("base_url", ""),
+        gsheet_url=data.get("gsheet", {}).get("url", ""),
     )
 
 
@@ -96,6 +98,20 @@ def load_env() -> EnvConfig:
         figma_access_token=os.getenv("FIGMA_ACCESS_TOKEN", ""),
         jira_api_token=os.getenv("JIRA_API_TOKEN", ""),
     )
+
+
+def save_project_gsheet_url(project_code: str, url: str):
+    """프로젝트 config에 Google Sheet URL 저장."""
+    config_path = BASE_DIR / "config" / "projects" / f"{project_code.lower()}.json"
+    if not config_path.exists():
+        return
+    with open(config_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    if "gsheet" not in data:
+        data["gsheet"] = {}
+    data["gsheet"]["url"] = url
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 
 def validate_setup() -> list[str]:

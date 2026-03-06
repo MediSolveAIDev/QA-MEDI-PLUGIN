@@ -148,8 +148,19 @@ def run_phase1a(
         return "rejected"
 
     # ---- Confluence 업로드 ----
-    confluence_url = ask_url("Confluence 업로드 대상 URL 또는 Page ID")
+    confluence_url = project_config.confluence_parent_page_id
     if confluence_url:
+        print(f"  저장된 Confluence Page ID 사용: {confluence_url}")
+    else:
+        confluence_url = ask_url("Confluence 업로드 대상 URL 또는 Page ID")
+
+    if confluence_url:
+        page_title = f"{state.project} {state.version} {state.feature} 시나리오"
+        print(f"\n  업로드 대상:")
+        print(f"    Confluence: {confluence_url}")
+        print(f"    페이지 제목: {page_title}")
+        print(f"    시나리오 파일: {state.artifacts['scenario']}")
+
         upload_url = upload_scenario_to_confluence(
             state.artifacts["scenario"],
             confluence_url,

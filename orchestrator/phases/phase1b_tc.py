@@ -154,8 +154,22 @@ def run_phase1b(
         return "rejected"
 
     # ---- Google Sheet 업로드 ----
-    gsheet_url = ask_url("Google Sheet URL")
+    gsheet_url = project_config.gsheet_url
     if gsheet_url:
+        print(f"  저장된 Google Sheet URL 사용: {gsheet_url}")
+    else:
+        gsheet_url = ask_url("Google Sheet URL")
+        if gsheet_url:
+            from orchestrator.config import save_project_gsheet_url
+            save_project_gsheet_url(state.project, gsheet_url)
+
+    if gsheet_url:
+        sheet_name = f"{state.project}_{state.feature}"
+        print(f"\n  업로드 대상:")
+        print(f"    Google Sheet: {gsheet_url}")
+        print(f"    시트명: {sheet_name}")
+        print(f"    TC 파일: {state.artifacts['tc']}")
+
         upload_url = upload_tc_to_gsheet(
             state.artifacts["tc"], gsheet_url, env_config, state,
         )
