@@ -30,7 +30,11 @@ def send_approval_notification(
     if no_slack:
         return
 
-    webhook_url = common_config.slack_webhook_url or env_config.slack_webhook_url
+    webhook_url = (
+        env_config.slack_webhook_approval
+        or common_config.slack_webhook_url
+        or env_config.slack_webhook_url
+    )
     if not webhook_url:
         log("WARN", "Slack webhook URL 미설정. 알림 건너뜀.")
         return
@@ -86,7 +90,11 @@ def send_progress_notification(
     if no_slack:
         return
 
-    webhook_url = common_config.slack_webhook_url or env_config.slack_webhook_url
+    webhook_url = (
+        common_config.slack_webhook_url
+        or env_config.slack_webhook_url
+        or env_config.slack_webhook_approval
+    )
     if not webhook_url:
         log("WARN", "Slack webhook URL 미설정. 알림 건너뜀.")
         return

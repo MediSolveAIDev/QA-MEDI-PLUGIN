@@ -67,11 +67,14 @@
 🔧 공통 환경 설정을 시작합니다.
 
 1. Slack 설정
-   - Webhook URL: (예: https://hooks.slack.com/services/xxx/yyy/zzz)
-     → 승인 요청 알림이 이 채널로 발송됩니다
-     → 확인 방법: Slack 앱 관리(https://api.slack.com/apps) → 앱 선택
-       → Incoming Webhooks → Webhook URL 복사
-       (앱이 없으면 Create New App → Incoming Webhooks 활성화 → Add New Webhook to Workspace)
+   - Webhook URL (승인 알림) [필수]: (예: https://hooks.slack.com/services/aaa/bbb/ccc)
+     → 팀장 승인 요청 알림이 이 채널로 발송됩니다
+   - Webhook URL (진행 알림) [선택]: (예: https://hooks.slack.com/services/xxx/yyy/zzz)
+     → 산출물 작성/수정 등 진행 상황 알림이 이 채널로 발송됩니다
+     → 미설정 시 승인 알림 Webhook으로 통합 발송
+   - 확인 방법: Slack 앱 관리(https://api.slack.com/apps) → 앱 선택
+     → Incoming Webhooks → Webhook URL 복사
+     (앱이 없으면 Create New App → Incoming Webhooks 활성화 → Add New Webhook to Workspace)
 
 2. JIRA 설정
    - JIRA URL: (예: https://your-domain.atlassian.net)
@@ -147,7 +150,8 @@
   ✅ CONFLUENCE_EMAIL = user@company.com
   ❌ CONFLUENCE_API_TOKEN = (미설정)
   ❌ FIGMA_ACCESS_TOKEN = (미설정)
-  ✅ SLACK_WEBHOOK_URL = https://hooks.slack.com/...
+  ❌ SLACK_WEBHOOK_APPROVAL = (미설정) [필수] (승인 알림)
+  ✅ SLACK_WEBHOOK_URL = https://hooks.slack.com/... [선택] (진행 알림, 미설정 시 승인 Webhook 사용)
   ❌ JIRA_API_TOKEN = (미설정)
 
 미설정 항목이 3개 있습니다.

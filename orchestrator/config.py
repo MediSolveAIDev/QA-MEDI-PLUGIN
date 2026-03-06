@@ -42,6 +42,7 @@ class EnvConfig:
     confluence_email: str
     confluence_url: str
     slack_webhook_url: str
+    slack_webhook_approval: str
     figma_access_token: str
     jira_api_token: str
 
@@ -95,6 +96,7 @@ def load_env() -> EnvConfig:
         confluence_email=os.getenv("CONFLUENCE_EMAIL", ""),
         confluence_url=os.getenv("CONFLUENCE_URL", ""),
         slack_webhook_url=os.getenv("SLACK_WEBHOOK_URL", ""),
+        slack_webhook_approval=os.getenv("SLACK_WEBHOOK_APPROVAL", ""),
         figma_access_token=os.getenv("FIGMA_ACCESS_TOKEN", ""),
         jira_api_token=os.getenv("JIRA_API_TOKEN", ""),
     )
@@ -128,13 +130,15 @@ def validate_setup() -> list[str]:
         return issues
 
     common = load_common_config()
-    if not common.slack_webhook_url:
-        issues.append("slack.webhook_url이 비어있습니다. /setup을 실행해주세요.")
     if not common.confluence_base_url:
         issues.append("confluence.base_url이 비어있습니다. /setup을 실행해주세요.")
 
     env_path = BASE_DIR / ".env"
     if not env_path.exists():
         issues.append(".env 파일이 없습니다. /setup을 실행해주세요.")
+    else:
+        env = load_env()
+        if not env.slack_webhook_approval:
+            issues.append("SLACK_WEBHOOK_APPROVAL이 비어있습니다. /setup을 실행해주세요.")
 
     return issues
