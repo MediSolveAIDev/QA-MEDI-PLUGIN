@@ -66,24 +66,14 @@
 ```
 🔧 공통 환경 설정을 시작합니다.
 
-1. Slack 설정
-   - Webhook URL (승인 알림) [필수]: (예: https://hooks.slack.com/services/aaa/bbb/ccc)
-     → 팀장 승인 요청 알림이 이 채널로 발송됩니다
-   - Webhook URL (진행 알림) [선택]: (예: https://hooks.slack.com/services/xxx/yyy/zzz)
-     → 산출물 작성/수정 등 진행 상황 알림이 이 채널로 발송됩니다
-     → 미설정 시 승인 알림 Webhook으로 통합 발송
-   - 확인 방법: Slack 앱 관리(https://api.slack.com/apps) → 앱 선택
-     → Incoming Webhooks → Webhook URL 복사
-     (앱이 없으면 Create New App → Incoming Webhooks 활성화 → Add New Webhook to Workspace)
-
-2. JIRA 설정
+1. JIRA 설정
    - JIRA URL: (예: https://your-domain.atlassian.net)
    - JIRA 계정 이메일:
 
-3. Confluence 설정
+2. Confluence 설정
    - Confluence URL: (예: https://your-domain.atlassian.net/wiki)
 
-4. GitHub 설정
+3. GitHub 설정
    - Organization: (기본값: MediSolveAIDev)
    - Actions Repo:
 
@@ -151,8 +141,6 @@
   ✅ CONFLUENCE_EMAIL = user@company.com
   ❌ CONFLUENCE_API_TOKEN = (미설정)
   ❌ FIGMA_ACCESS_TOKEN = (미설정)
-  ❌ SLACK_WEBHOOK_APPROVAL = (미설정) [필수] (승인 알림)
-  ✅ SLACK_WEBHOOK_URL = https://hooks.slack.com/... [선택] (진행 알림, 미설정 시 승인 Webhook 사용)
   ❌ JIRA_API_TOKEN = (미설정)
 
 미설정 항목이 3개 있습니다.
@@ -201,7 +189,6 @@ credentials/ 폴더 상태:
   ✅ Confluence - 연결 성공 (Space: SAY 확인됨)
   ❌ Figma API - 연결 실패 (401 Unauthorized → 토큰 확인 필요)
   ✅ Figma Bridge - tools/figma_bridge.py 존재 확인
-  ✅ Slack - Webhook 전송 성공
 ```
 
 **처리 규칙:**
@@ -278,14 +265,13 @@ API 키: .env ⚠️ (FIGMA_ACCESS_TOKEN 미설정)
 | JIRA 프로젝트 키 | 영문 대문자 | "영문 대문자로 입력해주세요 (예: CENSAY)" |
 | Figma URL → ID 추출 | `/file/` 또는 `/design/` 패턴 | "Figma 파일 URL을 그대로 붙여넣어주세요" |
 | Confluence Page ID | 숫자 | "페이지 URL 끝의 숫자를 입력해주세요" |
-| Slack User ID | `U`로 시작 + 영숫자 | "Slack 프로필에서 Member ID를 복사해주세요" |
 | API 토큰 | 비어있지 않음 | "해당 서비스의 API 토큰을 발급받아 입력해주세요" |
 
 ---
 
 ## 6. 파일 처리 규칙
 
-- **config/common.json**: 공통 설정 저장 (Slack, JIRA URL 등)
+- **config/common.json**: 공통 설정 저장 (JIRA URL, Confluence 등)
 - **config/projects/*.json**: 프로젝트별 설정 저장
 - **.env**: API 토큰/비밀번호 저장 (git 추적 안 됨)
 

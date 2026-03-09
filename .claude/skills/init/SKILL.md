@@ -50,10 +50,6 @@
 
 ```json
 {
-  "slack": {
-    "team_lead_user_id": "",
-    "webhook_url": ""
-  },
   "jira": {
     "base_url": "",
     "email": ""
@@ -71,8 +67,6 @@
   "env_file": {
     "_comment": "민감 정보는 .env에서 관리. 아래는 필요한 키 목록.",
     "required_keys": [
-      "SLACK_WEBHOOK_APPROVAL",
-      "SLACK_WEBHOOK_URL",
       "JIRA_API_TOKEN",
       "CONFLUENCE_API_TOKEN",
       "FIGMA_ACCESS_TOKEN"
@@ -227,7 +221,6 @@
 ### 4.6 .env (없을 때만 생성)
 
 ```
-SLACK_WEBHOOK_URL=
 JIRA_API_TOKEN=
 CONFLUENCE_URL=
 CONFLUENCE_EMAIL=

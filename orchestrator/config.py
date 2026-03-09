@@ -27,8 +27,6 @@ class ProjectConfig:
 
 @dataclass
 class CommonConfig:
-    slack_team_lead_user_id: str
-    slack_webhook_url: str
     jira_base_url: str
     jira_email: str
     confluence_base_url: str
@@ -41,8 +39,6 @@ class EnvConfig:
     confluence_api_token: str
     confluence_email: str
     confluence_url: str
-    slack_webhook_url: str
-    slack_webhook_approval: str
     figma_access_token: str
     jira_api_token: str
 
@@ -56,8 +52,6 @@ def load_common_config() -> CommonConfig:
     with open(config_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     return CommonConfig(
-        slack_team_lead_user_id=data.get("slack", {}).get("team_lead_user_id", ""),
-        slack_webhook_url=data.get("slack", {}).get("webhook_url", ""),
         jira_base_url=data.get("jira", {}).get("base_url", ""),
         jira_email=data.get("jira", {}).get("email", ""),
         confluence_base_url=data.get("confluence", {}).get("base_url", ""),
@@ -95,8 +89,6 @@ def load_env() -> EnvConfig:
         confluence_api_token=os.getenv("CONFLUENCE_API_TOKEN", ""),
         confluence_email=os.getenv("CONFLUENCE_EMAIL", ""),
         confluence_url=os.getenv("CONFLUENCE_URL", ""),
-        slack_webhook_url=os.getenv("SLACK_WEBHOOK_URL", ""),
-        slack_webhook_approval=os.getenv("SLACK_WEBHOOK_APPROVAL", ""),
         figma_access_token=os.getenv("FIGMA_ACCESS_TOKEN", ""),
         jira_api_token=os.getenv("JIRA_API_TOKEN", ""),
     )
@@ -138,7 +130,7 @@ def validate_setup() -> list[str]:
         issues.append(".env 파일이 없습니다. /setup을 실행해주세요.")
     else:
         env = load_env()
-        if not env.slack_webhook_approval:
-            issues.append("SLACK_WEBHOOK_APPROVAL이 비어있습니다. /setup을 실행해주세요.")
+        if not env.confluence_api_token:
+            issues.append("CONFLUENCE_API_TOKEN이 비어있습니다. /setup을 실행해주세요.")
 
     return issues
