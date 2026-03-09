@@ -87,10 +87,6 @@
    - Organization: (기본값: MediSolveAIDev)
    - Actions Repo:
 
-5. Orchestrator 설정
-   - 별칭 [선택]: (자유 입력)
-     → 설정하면 별칭으로 Orchestrator 호출 가능
-     → 미설정 시 /run-pipeline 또는 자연어 패턴으로만 호출
 ```
 
 **처리 규칙:**
@@ -203,7 +199,8 @@ credentials/ 폴더 상태:
 테스트 결과:
   ✅ JIRA - 연결 성공 (프로젝트: SAY 확인됨)
   ✅ Confluence - 연결 성공 (Space: SAY 확인됨)
-  ❌ Figma - 연결 실패 (401 Unauthorized → 토큰 확인 필요)
+  ❌ Figma API - 연결 실패 (401 Unauthorized → 토큰 확인 필요)
+  ✅ Figma Bridge - tools/figma_bridge.py 존재 확인
   ✅ Slack - Webhook 전송 성공
 ```
 
@@ -211,6 +208,14 @@ credentials/ 폴더 상태:
 - 각 서비스별 최소 API 호출로 연결 확인
 - 실패 시 원인 안내 (401 → 토큰, 404 → URL, timeout → 네트워크)
 - MCP 서버 연결 여부도 확인 (Confluence MCP, Figma MCP 등)
+- Figma Bridge: `tools/figma_bridge.py` 파일 존재 여부 확인. 없으면 안내:
+  ```
+  ⚠️ tools/figma_bridge.py 파일이 없습니다.
+  Figma 보강 단계(Phase 1-A)에서 Figma 브릿지가 필요합니다.
+  설정 가이드: https://medisolveai.atlassian.net/wiki/spaces/01/pages/230457386/claude+code+-+Figma+connect+plugin
+  figma_bridge.py를 tools/ 폴더에 배치해주세요.
+  ```
+- Figma Bridge 실행은 파이프라인 Phase 1-A에서 자동 처리됨 (setup에서는 파일 존재만 확인)
 
 ### Step 5: 설정 완료 요약
 

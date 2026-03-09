@@ -34,7 +34,6 @@ class CommonConfig:
     confluence_base_url: str
     github_org: str
     github_actions_repo: str
-    orchestrator_nickname: str
 
 
 @dataclass
@@ -64,7 +63,6 @@ def load_common_config() -> CommonConfig:
         confluence_base_url=data.get("confluence", {}).get("base_url", ""),
         github_org=data.get("github", {}).get("org", ""),
         github_actions_repo=data.get("github", {}).get("actions_repo", ""),
-        orchestrator_nickname=data.get("orchestrator", {}).get("nickname", ""),
     )
 
 

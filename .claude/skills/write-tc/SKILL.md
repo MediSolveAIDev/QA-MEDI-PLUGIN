@@ -14,7 +14,7 @@ argument-hint: "[시나리오 파일 경로 또는 Page ID]"
 
 ### 파일 형식
 - **JSON (.json)** 형식으로 로컬 저장
-- Confluence 또는 Google Sheets 업로드 시 변환
+- Google Sheets 업로드 시 테이블 형식으로 변환
 
 ### 저장 경로
 ```
@@ -84,7 +84,7 @@ data/tc/{프로젝트}_{버전}_{기능명}_tc.json
 ### 활용 방법
 
 1. **TC 작성 시**: JSON으로 로컬 저장
-2. **검토 후**: Confluence 업로드 또는 Google Sheets 동기화
+2. **검토 후**: Google Sheets 업로드 (TC 확정 → gspread API)
 3. **참조 시**: `/write-test-code`에서 TC JSON 읽어서 자동화 코드 생성
 
 ---
@@ -579,9 +579,9 @@ TC 작성 완료 후 아래 항목 점검:
 }
 ```
 
-### Confluence/Google Sheets 업로드
+### Google Sheets 업로드
 
-TC JSON을 Confluence 또는 Google Sheets에 업로드할 때는 테이블 형식으로 변환:
+TC JSON을 Google Sheets에 업로드할 때는 테이블 형식으로 변환:
 
 | JIRA 컴포넌트 | 1 Depth | 2 Depth | 3 Depth | 4 Depth | 5 Depth | 6 Depth | Priority | Expected Result | 비고 |
 |--------------|---------|---------|---------|---------|---------|---------|----------|-----------------|------|

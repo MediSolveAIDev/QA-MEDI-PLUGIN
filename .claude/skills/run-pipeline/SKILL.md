@@ -2,9 +2,6 @@
 
 > Claude Code가 직접 파이프라인을 운영한다. Skill 도구로 각 스킬을 호출하고, JSON으로 상태를 관리한다.
 >
-> **별칭 트리거**: `config/common.json`의 `orchestrator.nickname`에 설정된 별칭으로 호출하면 무조건 Orchestrator로 인식한다.
-> - 예: nickname이 설정되어 있으면 → "{별칭}야 새 업무 줄게", "{별칭} 진행 상황" 등
->
 > **자연어 트리거**: 아래 패턴이 감지되면 이 스킬을 즉시 실행한다.
 > - "새 업무 줄게", "새 업무", "업무 줄게", "일 줄게"
 > - "파이프라인 실행", "파이프라인 시작", "파이프라인 돌려"
@@ -14,7 +11,7 @@
 > - "기획서 업데이트됐어", "기획 변경됐어"
 > - "진행 상황", "어디까지 했어", "상태 알려줘", "지금 뭐 하고 있어"
 >
-> **중요**: 별칭 또는 위 패턴 감지 시 사용자에게 "어떤 작업을 할까요?" 같은 선택지를 제시하지 않는다. 부족한 정보만 질문한 뒤 바로 파이프라인을 실행한다.
+> **중요**: 위 패턴 감지 시 사용자에게 "어떤 작업을 할까요?" 같은 선택지를 제시하지 않는다. 부족한 정보만 질문한 뒤 바로 파이프라인을 실행한다.
 
 ---
 
@@ -110,10 +107,18 @@ python -m orchestrator.cli_state list
 8. 리뷰 산출물 저장: `update {ID} artifact.scenario_review_spec {경로}`, `artifact.scenario_review_qa {경로}`
 9. Slack 알림: `notify {ID} approval "1_scenario_review|시나리오 리뷰가 Pass 되었습니다."`
 10. **★ 승인 1 (수동)**: 사용자에게 리뷰 결과 확인 요청
-11. Skill `/write-scenario` 호출 (Figma 보강 컨텍스트)
-12. Slack 알림: `notify {ID} approval "2_scenario_final|Figma 보강 시나리오가 준비되었습니다."`
-13. **★ 승인 2 (수동)**: 사용자에게 Figma 검수 후 시나리오 확정 요청
-14. 승인 시: Confluence 업로드 (Bash로 Python 유틸 호출)
+11. Figma 브릿지 서버 확인 (포트 3055 리스닝 여부)
+    - 미실행 시: `python tools/figma_bridge.py` 백그라운드 실행
+    - 플러그인 연결 대기 → 사용자에게 "Figma에서 Claude Connector 플러그인을 열어주세요" 안내
+    - 참고: https://medisolveai.atlassian.net/wiki/spaces/01/pages/230457386/claude+code+-+Figma+connect+plugin
+12. Figma 브릿지를 통해 Figma 디자인 데이터 조회 (시나리오 해당 화면)
+13. Skill `/write-scenario` 호출 (Figma 데이터 + 기존 시나리오 → 보강)
+14. Skill `/review-spec` + `/review-qa` 호출 (Figma 보강 시나리오 리뷰)
+    - **PASS**: 15단계로
+    - **FAIL**: Skill `/write-scenario` 재호출 (피드백 반영) → 14단계 반복 (최대 3회)
+15. Slack 알림: `notify {ID} approval "2_scenario_final|Figma 보강 시나리오 리뷰가 Pass 되었습니다."`
+16. **★ 승인 2 (수동)**: 사용자에게 시나리오 확정 요청
+17. 승인 시: Confluence 업로드 (Bash로 Python 유틸 호출)
 15. `update {ID} phase "1-B"`
 
 ### Phase 1-B: TC 확정
@@ -204,11 +209,16 @@ python -m orchestrator.cli_state list
 "기획서 업데이트됐어" 감지 시:
 
 1. `python -m orchestrator.cli_state status latest` 로 현재 상태 확인
-2. 현재 Phase에 따라 재작업 범위 결정:
-   - **1-A 진행 중/완료**: 시나리오 재작업 → 리뷰 → 승인
-   - **1-B 진행 중/완료**: 시나리오 diff → 변경된 부분 TC 재작업
-   - **3 이후**: 시나리오 → TC → 테스트코드 순차 재작업
-3. 재작업 범위를 사용자에게 보고 후 진행
+2. Skill `/write-scenario` 호출 (변경 분석 모드 — SKILL.md 2절)
+   - 변경이력 파싱 → Confluence에서 해당 섹션 조회 → 기존 시나리오와 비교
+   - 변경사항 diff 출력 (추가/수정/삭제 + 영향받는 TC 목록)
+3. 변경 분석 결과 + 현재 Phase 기반으로 재작업 범위 결정:
+   - **1-A (승인 1 이전)**: 시나리오 수정 → 리뷰 루프 재진행 → 승인 1
+   - **1-A (승인 1 통과 ~ 승인 2 이전)**: 시나리오 수정 → 리뷰 루프 재진행 (승인 1부터 다시) → Pass 후 Figma 보강 → 승인 2
+   - **1-B 진행 중/완료**: 시나리오 수정 → 시나리오 리뷰 루프 → 영향받는 TC 재작업 → TC 리뷰 루프
+   - **3 이후**: 시나리오 → TC → 테스트코드 순차 재작업 (각 단계마다 리뷰 루프 포함)
+4. 재작업 범위를 사용자에게 보고 후 진행
+5. **원칙: 시나리오/TC가 수정되면 반드시 리뷰 루프를 재진행한다. 리뷰 없이 승인 단계로 넘어가지 않는다.**
 
 ---
 
