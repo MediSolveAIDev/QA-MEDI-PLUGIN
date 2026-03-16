@@ -12,13 +12,13 @@
 
 - **팀장**: 트리거(한 번), 승인(7개 포인트), 최종 판단 (유일한 사람)
 - **Orchestrator**: Claude Code가 직접 파이프라인 관리, Skill 도구로 각 스킬 호출, JSON으로 상태 관리
-- **스킬**: 각 역할에 특화된 SKILL.md 정의 (14개)
+- **스킬**: 각 역할에 특화된 SKILL.md 정의 (15개)
 - **운영 방식**: 팀장 지시 → Claude Code가 Skill 도구로 스킬 순차 호출 → 승인 포인트에서 대기 → 최종 보고
 - **대상 프로젝트**: SAY, BAY, SSO (프로젝트별 병렬 파이프라인)
 
 ---
 
-## 2. 에이전트 목록 (14개)
+## 2. 에이전트 목록 (15개)
 
 ### 유틸리티
 
@@ -37,6 +37,7 @@
 | # | 에이전트 | 스킬 | 상태 |
 |---|----------|------|------|
 | 2 | Scenario Writer | `/write-scenario` | 기존 (SAY 이관) |
+| 2-1 | Figma Enricher | `/enrich-figma` | 신규 개발 |
 | 3 | TC Writer | `/write-tc` | 기존 (SAY 이관) |
 | 4 | Project Reporter | `/report-project` | 신규 개발 |
 | 5 | Bug Reporter | `/report-bug` | 비활성화 (JIRA 연동 후 활성화) |
@@ -183,6 +184,7 @@ qa_agent/
 │       ├── setup/SKILL.md               (신규) Setup Guide - 온보딩
 │       ├── run-pipeline/SKILL.md        (신규) Orchestrator
 │       ├── write-scenario/SKILL.md      (기존) Scenario Writer
+│       ├── enrich-figma/SKILL.md        (신규) Figma Enricher
 │       ├── write-tc/SKILL.md            (기존) TC Writer
 │       ├── report-project/SKILL.md      (신규) Project Reporter
 │       ├── report-bug/SKILL.md          (신규) Bug Reporter
@@ -210,6 +212,10 @@ qa_agent/
 │   ├── rules/                           ← Rule Learner (신규)
 │   ├── test_results/                    ← GitHub Actions (외부)
 │   └── pipeline/                        ← Orchestrator (신규)
+├── figma_output/                      ← Figma export 데이터 (enrich-figma 스킬 참조)
+│   └── {프로젝트}_{버전}/               ← summary.json + descriptions.txt + *.png
+├── tools/                             ← 유틸리티 스크립트
+│   └── figma_extract.py                 ← Figma 데이터 추출 스크립트
 ├── docs/                              ← 설계 문서
 │   ├── qa_agent_architecture.md         (v2.0)
 │   └── qa_organization.md

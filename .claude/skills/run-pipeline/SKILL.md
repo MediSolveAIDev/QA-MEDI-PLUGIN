@@ -127,16 +127,13 @@ python -m orchestrator.cli_state list
 
 1. `update {ID} phase "1-B"`
 2. Skill `/write-tc` 호출 (확정 시나리오 파일 전달)
+   - **write-tc 내부에서 자체 리뷰 루프 2회 이상 수행** (check-format + review-tc + review-qa)
+   - 양식 위반은 자동 수정, 내용 수정 제안은 목록으로 반환
+   - `review_history`에 리뷰 이력 기록됨
 3. 산출물 경로 저장: `update {ID} artifact.tc {파일경로}`
-4. Skill `/check-format` 호출 (TC 파일 전달)
-   - **PASS**: 5단계로
-   - **FAIL**: Skill `/write-tc` 재호출 (포맷 피드백 반영) → 4단계 반복 (최대 3회)
-5. Skill `/review-spec` 호출 (TC 파일 전달)
-6. Skill `/review-qa` 호출 (TC 파일 전달)
-7. 리뷰 결과 확인:
-   - **PASS**: 8단계로
-   - **FAIL**: Skill `/write-tc` 재호출 (피드백 반영) → 5단계 반복 (최대 3회)
-8. **★ 승인 3 (수동)**: 사용자에게 TC 확정 요청
+4. write-tc가 반환한 내용 수정 제안을 사용자에게 보고
+   - 승인된 항목 반영 → TC 최종 확정
+5. **★ 승인 3 (수동)**: 사용자에게 TC 확정 요청
 9. 승인 즉시 실행 (중단 금지):
    - `update {ID} approval.3_tc_final approved`
    - Google Sheet 업로드 (Bash로 Python 유틸 호출)
