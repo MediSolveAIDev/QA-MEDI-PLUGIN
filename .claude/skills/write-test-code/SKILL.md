@@ -10,9 +10,31 @@ argument-hint: "[TC 파일 경로 또는 시나리오 파일 경로]"
 
 ---
 
-## 0. 저장 규칙
+## 0. 선행 탐색 (코드 생성 전 필수)
+
+코드 생성 전 대상 프로젝트의 기존 구조를 탐색한다.
+
+### 0.1 기존 테스트 파일 확인
+- 대상 프로젝트의 `tests/` 폴더를 탐색하여 관련 기존 파일 확인
+- **동일 기능의 테스트 파일이 이미 존재하면** → 기존 파일에 함수 추가/수정 (신규 생성 금지)
+- **없으면** → 신규 파일 생성
+
+### 0.2 기존 헬퍼 유틸리티 확인
+- `helpers/` 폴더의 기존 유틸리티 함수(`*_utils.py`) 탐색
+- 로그인, 페이지 이동, 데이터 세팅 등 반복 작업은 기존 함수 재사용
+- 기존 파일 수정 시 import, fixture, 기존 함수와의 일관성 유지
+
+### 0.3 네이밍 컨벤션 확인
+- 기존 `tests/` 폴더의 파일명 패턴을 확인하여 동일 패턴으로 생성
+- 기존 파일이 없을 때만 아래 기본 규칙 사용
+
+---
+
+## 1. 저장 규칙
 
 ### 테스트 코드 저장 경로
+
+**기본 규칙** (기존 파일이 없는 경우):
 ```
 tests/test_{프로젝트}_{버전}_{기능}.py
 ```
@@ -21,6 +43,8 @@ tests/test_{프로젝트}_{버전}_{기능}.py
 - `tests/test_SAY_v3.2_로그인.py`
 - `tests/test_BAY_v1.0_결제.py`
 - `tests/test_SSO_v2.0_인증.py`
+
+> 기존 프로젝트에 다른 네이밍 패턴이 있으면 해당 패턴을 따른다.
 
 ### 테스트 결과 저장 경로
 
@@ -45,13 +69,13 @@ data/
 
 ---
 
-## 1. 테스트 구조 (AAA 패턴)
+## 2. 테스트 구조 (AAA 패턴)
 
 모든 테스트는 Arrange-Act-Assert 패턴을 따른다.
 
 ```python
 def test_example(page: Page):
-    # Arrange - 테스트 준비
+    # Arrange - 테스트 준비 (기존 헬퍼 우선 사용)
     page.goto(LOGIN_URL)
 
     # Act - 동작 수행
@@ -62,9 +86,15 @@ def test_example(page: Page):
     assert page.locator("[data-testid='title-txt']").is_visible()
 ```
 
+**Arrange 단계 규칙:**
+- 기존 `helpers/` 유틸리티가 있으면 반드시 재사용 (예: `login_utils.login()`, `page_utils.navigate()`)
+- 새 유틸리티가 필요하면 기존 `helpers/` 패턴에 맞춰 추가
+
 ---
 
-## 2. 네이밍 규칙
+## 3. 네이밍 규칙
+
+### 기본 규칙 (기존 파일이 없는 경우)
 
 ```python
 # 테스트 파일: test_{프로젝트}_{버전}_{기능}.py
@@ -77,9 +107,31 @@ def test_login_with_valid_credentials_should_succeed():
 def test_login_with_invalid_password_should_fail():
 ```
 
+> 기존 프로젝트에 다른 네이밍 패턴이 있으면 해당 패턴을 따른다.
+
+### test_name_mapping.py 업데이트
+
+대상 프로젝트에 `helpers/test_name_mapping.py`가 존재하면, 테스트 파일/함수 추가 시 매핑도 함께 업데이트한다. 없으면 스킵.
+
+```python
+# helpers/test_name_mapping.py
+
+# 파일명 매핑 — 테스트 파일 추가 시 항목 추가
+test_name_mapping = {
+    "test_pc_login.py": "[PC][로그인] 로그인 화면 테스트",
+    # ← 새 파일 추가 시 여기에 매핑 추가
+}
+
+# 함수명 매핑 — 테스트 함수 추가 시 항목 추가
+test_function_mapping = {
+    "test_pc_login": "로그인/로그아웃 확인",
+    # ← 새 함수 추가 시 여기에 매핑 추가
+}
+```
+
 ---
 
-## 3. 셀렉터 우선순위
+## 4. 셀렉터 우선순위
 
 1. **data-testid** (최우선): `[data-testid='login-btn']`
 2. **role + name**: `page.get_by_role("button", name="로그인")`
@@ -88,7 +140,7 @@ def test_login_with_invalid_password_should_fail():
 
 ---
 
-## 4. 대기 전략
+## 5. 대기 전략
 
 ### 명시적 대기 (권장)
 ```python
@@ -110,7 +162,7 @@ time.sleep(3)  # 꼭 필요한 경우만 사용
 
 ---
 
-## 5. 테스트 데이터
+## 6. 테스트 데이터
 
 ### JSON 파일 활용
 ```python
@@ -131,7 +183,7 @@ TEST_USER = os.getenv("TEST_USER")
 
 ---
 
-## 6. Fixture 활용
+## 7. Fixture 활용
 
 conftest.py에 정의된 fixture 사용:
 
@@ -144,11 +196,11 @@ conftest.py에 정의된 fixture 사용:
 
 ---
 
-## 7. Soft Assertion (ChecklistReporter 패턴)
+## 8. Soft Assertion (ChecklistReporter 패턴)
 
 **목적:** 테스트 중 실패(Fail)나 예외 발생 시 테스트가 자동 종료되지 않고, 이후 단계를 모두 실행한 뒤 최종 결과를 집계한다.
 
-### 7.1 기본 구조
+### 8.1 기본 구조
 
 ```python
 from helpers.checklist_reporter import (
@@ -179,7 +231,7 @@ def test_login(page: Page):
             pytest.fail(f"체크리스트 실패 항목 있음: {result['summary']}")
 ```
 
-### 7.2 Soft 함수 목록
+### 8.2 Soft 함수 목록
 
 | 함수 | 용도 | 반환값 |
 |------|------|--------|
@@ -190,7 +242,7 @@ def test_login(page: Page):
 | `soft_wait(reporter, page, selector, name)` | 대기 (실패해도 계속) | `bool` |
 | `soft_action(reporter, callable, name)` | 임의 함수 실행 | `(bool, Any)` |
 
-### 7.3 soft_expect 사용 예시
+### 8.3 soft_expect 사용 예시
 
 ```python
 # to_be_visible - 요소 노출 확인
@@ -206,7 +258,7 @@ soft_expect(reporter, button, "to_be_enabled", "버튼 활성화")
 soft_expect(reporter, items, "to_have_count", "항목 3개", count=3)
 ```
 
-### 7.4 step 컨텍스트 매니저
+### 8.4 step 컨텍스트 매니저
 
 `step()`으로 테스트를 논리적 단위로 묶는다. Step 내 하나라도 FAIL이면 해당 Step은 FAIL로 기록되지만, **다음 Step은 계속 실행**된다.
 
@@ -223,7 +275,7 @@ with step(reporter, "3. 결과 확인"):
     soft_expect(reporter, ...)
 ```
 
-### 7.5 결과 집계
+### 8.5 결과 집계
 
 `reporter.finish()` 호출 시:
 - Step별 PASS/FAIL/SKIP 집계
@@ -238,14 +290,14 @@ Duration: 12.34초
 ==================================================
 ```
 
-### 7.6 핵심 규칙
+### 8.6 핵심 규칙
 
 - 모든 검증은 `soft_*` 함수 사용 (bare `assert` 사용 금지)
 - `try/finally` 블록으로 감싸서 예외 발생 시에도 `reporter.finish()` 호출 보장
 - `reporter.has_failure`로 최종 실패 여부 판단 후 `pytest.fail()` 호출
 - Step 이름은 테스트 흐름을 나타내는 한글 사용
 
-### 7.7 예외 발생 시 리포트 처리
+### 8.7 예외 발생 시 리포트 처리
 
 테스트 중 예상치 못한 예외(TimeoutError, 네트워크 오류 등)가 발생해도 **리포트에 기록**되어야 한다.
 
@@ -281,7 +333,7 @@ def test_example(page: Page):
 - 예외가 발생한 시점까지의 모든 Step 결과가 리포트에 포함됨
 - 예외로 인해 실행되지 못한 이후 Step은 리포트에 나타나지 않음 (정상 동작)
 
-### 7.8 결과 데이터 이중 구조 (Slack vs 리포트)
+### 8.8 결과 데이터 이중 구조 (Slack vs 리포트)
 
 테스트 실행 시 **두 가지 결과 파일**이 생성되며, 각각 다른 단위로 집계된다.
 
@@ -319,7 +371,7 @@ def test_login(page: Page):
 
 ---
 
-## 8. 테스트 안정성
+## 9. 테스트 안정성
 
 - 각 테스트는 독립적으로 실행 가능해야 함
 - 테스트 간 데이터 의존성 최소화
@@ -330,7 +382,7 @@ def test_login(page: Page):
 
 ---
 
-## 9. 마커 활용
+## 10. 마커 활용
 
 ```python
 import pytest

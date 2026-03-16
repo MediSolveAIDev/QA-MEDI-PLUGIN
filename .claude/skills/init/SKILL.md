@@ -38,6 +38,8 @@
 │   ├── rules/
 │   ├── test_results/
 │   └── pipeline/
+├── figma_output/              ← Figma export 데이터 저장 (enrich-figma 스킬 참조)
+├── tools/                     ← Figma 추출 스크립트 등 유틸리티
 ├── templates/
 └── tests/
 ```
