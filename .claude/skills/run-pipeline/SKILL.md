@@ -104,19 +104,14 @@ python -m orchestrator.cli_state list
    - **FAIL**: Skill `/write-scenario` 재호출 (피드백 반영), `update {ID} rework write-scenario` → 4단계 반복 (최대 3회)
    - **3회 초과**: 사용자에게 에스컬레이션 보고 → 중단
 7. 리뷰 산출물 저장: `update {ID} artifact.scenario_review_spec {경로}`, `artifact.scenario_review_qa {경로}`
-8. **★ 승인 1 (수동)**: 사용자에게 리뷰 결과 확인 요청
-9. 승인 즉시 실행 (중단 금지):
-   - `update {ID} approval.1_scenario_review approved`
-   - Figma 브릿지 서버 확인 (포트 3055 리스닝 여부)
-     - 미실행 시: `python tools/figma_bridge.py` 백그라운드 실행
-     - 플러그인 연결 대기 → 사용자에게 "Figma에서 Claude Connector 플러그인을 열어주세요" 안내
-     - 참고: https://medisolveai.atlassian.net/wiki/spaces/01/pages/230457386/claude+code+-+Figma+connect+plugin
-   - Figma 브릿지를 통해 Figma 디자인 데이터 조회
-   - Skill `/write-scenario` 호출 (Figma 데이터 + 기존 시나리오 → 보강)
-   - Skill `/review-spec` + `/review-qa` 호출 (Figma 보강 시나리오 리뷰)
-     - **PASS**: 10단계로
-     - **FAIL**: Skill `/write-scenario` 재호출 (피드백 반영) → 리뷰 반복 (최대 3회)
-10. **★ 승인 2 (수동)**: 사용자에게 시나리오 확정 요청
+8. Skill `/learn-rules` 호출 (리뷰 산출물 전달 → 일반화 가능한 패턴 자동 추출 → `data/rules/`에 저장)
+9. **★ 승인 1 (수동)**: 사용자에게 리뷰 결과 확인 요청
+10. 승인 즉시 실행 (중단 금지):
+    - `update {ID} approval.1_scenario_review approved`
+    - 사용자에게 안내: "Figma 보강이 필요하면 `/enrich-figma`로 진행해주세요. 시나리오 확정 시 승인해주세요."
+    - **Figma 보강은 팀장 판단** (수동 — `/enrich-figma` 직접 호출)
+    - 파이프라인은 승인 2를 대기
+11. **★ 승인 2 (수동)**: 사용자에게 시나리오 확정 요청 (Figma 보강 여부 무관하게 최종 확정)
 11. 승인 즉시 실행 (중단 금지):
     - `update {ID} approval.2_scenario_final approved`
     - Confluence 업로드 (Bash로 Python 유틸 호출)
@@ -132,6 +127,8 @@ python -m orchestrator.cli_state list
    - `review_history`에 리뷰 이력 기록됨
 3. 산출물 경로 저장: `update {ID} artifact.tc {파일경로}`
 4. write-tc가 반환한 내용 수정 제안을 사용자에게 보고
+   - 승인된 항목 반영 → TC 최종 확정
+5. Skill `/learn-rules` 호출 (write-tc 내부 리뷰 결과(`review_history`) 전달 → 일반화 가능한 패턴 추출 → `data/rules/`에 저장)
    - 승인된 항목 반영 → TC 최종 확정
 5. **★ 승인 3 (수동)**: 사용자에게 TC 확정 요청
 9. 승인 즉시 실행 (중단 금지):
