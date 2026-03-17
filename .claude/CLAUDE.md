@@ -40,7 +40,7 @@
 | 2-1 | Figma Enricher | `/enrich-figma` | 신규 개발 |
 | 3 | TC Writer | `/write-tc` | 기존 (SAY 이관) |
 | 4 | Project Reporter | `/report-project` | 신규 개발 |
-| 5 | Bug Reporter | `/report-bug` | 비활성화 (JIRA 연동 후 활성화) — 2-Phase 설계 완료 (수집+실행) |
+| 5 | Bug Reporter | `/report-bug` | 활성화 (Atlassian MCP 연결 시 동작, `/setup`에서 설정) |
 
 ### 분석/리뷰 (전 프로젝트 공통)
 

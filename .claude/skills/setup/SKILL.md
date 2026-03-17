@@ -179,7 +179,56 @@ credentials/ 폴더 상태:
 - `token.json`은 공유 불필요. 최초 Google Sheets 업로드 실행 시 브라우저 인증 팝업이 뜨고, 본인 Google 계정으로 로그인하면 자동 생성됨
 - 파일 없어도 다음 단계로 진행 가능 (Google Sheets 업로드만 비활성)
 
-### Step 3-2: Figma Export 환경 확인
+### Step 3-2: Atlassian MCP 서버 확인 (JIRA/Confluence 연동)
+
+```
+🔗 Atlassian MCP 서버 연결을 확인합니다.
+
+MCP 서버 상태:
+  ✅ Atlassian MCP - 연결됨 (JIRA + Confluence 사용 가능)
+  또는
+  ❌ Atlassian MCP - 미설정
+```
+
+**Atlassian MCP 미설정 시 안내:**
+
+```
+⚠️ Atlassian MCP 서버가 설정되지 않았습니다.
+
+JIRA 버그 관리(/report-bug) 및 Confluence 연동에 필요합니다.
+
+📋 설정 방법:
+  1. ~/.claude/.mcp.json 파일을 열어주세요
+  2. mcpServers에 아래 내용을 추가하세요:
+
+  "atlassian": {
+    "command": "npx",
+    "args": ["-y", "@anthropic/atlassian-mcp-server"],
+    "env": {
+      "ATLASSIAN_SITE_URL": "https://{your-domain}.atlassian.net",
+      "ATLASSIAN_USER_EMAIL": "{jira-email}",
+      "ATLASSIAN_API_TOKEN": "{jira-api-token}"
+    }
+  }
+
+  ⚠️ 실제 패키지명은 npm 검색으로 확인 필요
+     (커뮤니티: @anthropic/atlassian-mcp-server, mcp-remote-atlassian 등)
+
+  3. Claude Code를 재시작하세요
+  4. /setup check 로 연결 확인
+
+⏭️ 지금 건너뛸 수 있습니다.
+   JIRA 연동 없이도 시나리오/TC 작성은 정상 동작합니다.
+   나중에 /setup check 로 다시 확인할 수 있습니다.
+```
+
+**처리 규칙:**
+- `~/.claude/.mcp.json`에 `atlassian` 키가 있는지 파일 읽기로 확인
+- 있으면 ✅ 표시
+- 없으면 설정 가이드 출력 후 스킵 가능 (다음 단계로 진행)
+- Atlassian MCP 없어도 나머지 스킬은 정상 동작 (report-bug만 비활성)
+
+### Step 3-3: Figma Export 환경 확인
 
 ```
 🎨 Figma Export 환경을 확인합니다.
@@ -229,7 +278,8 @@ tools/ 폴더 상태:
 **처리 규칙:**
 - 각 서비스별 최소 API 호출로 연결 확인
 - 실패 시 원인 안내 (401 → 토큰, 404 → URL, timeout → 네트워크)
-- MCP 서버 연결 여부도 확인 (Confluence MCP, Figma MCP 등)
+- MCP 서버 연결 여부도 확인 (Atlassian MCP, Figma MCP 등)
+- Atlassian MCP 연결 시 JIRA 프로젝트 조회 테스트 포함
 - Figma Bridge: `tools/figma_bridge.py` 파일 존재 여부 확인. 없으면 안내:
   ```
   ⚠️ tools/figma_bridge.py 파일이 없습니다.
@@ -250,6 +300,7 @@ tools/ 폴더 상태:
   - BAY: config/projects/bay.json ⚠️ (Figma 미설정)
   - SSO: config/projects/sso.json ⚠️ (전체 미설정)
 API 키: .env ⚠️ (FIGMA_ACCESS_TOKEN 미설정)
+Atlassian MCP: ✅ 연결됨 / ❌ 미설정 (JIRA 버그 관리 비활성)
 Figma Export: tools/figma_extract.py ✅ / figma_output/ ✅
 
 💡 나중에 변경하려면: /setup update SAY
