@@ -207,11 +207,11 @@ pip install -r requirements.txt
 초기화 완료!
 
 [폴더]
-  생성됨: config/, config/projects/, data/scenarios/, data/tc/, ...
+  생성됨: config/, data/scenarios/, data/tc/, ...
   이미 존재: (해당 시 표시)
 
 [파일]
-  생성됨: config/common.json, config/projects/say.json, templates/figma_review_prompt.md, ...
+  생성됨: config/common.json, config/project.json, templates/figma_review_prompt.md, ...
   이미 존재: (해당 시 표시)
 
 다음 단계: /setup 을 실행하여 설정값을 입력하세요.

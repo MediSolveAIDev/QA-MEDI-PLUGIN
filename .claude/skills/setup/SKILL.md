@@ -34,7 +34,7 @@
 사용자: /setup new
 ```
 
-- 새 프로젝트 JSON 파일 생성 (`config/projects/{name}.json`)
+- 현재 프로젝트 설정 변경 (`config/project.json`)
 - 기존 템플릿 기반으로 대화형 입력
 
 ### 2.3 설정 변경
