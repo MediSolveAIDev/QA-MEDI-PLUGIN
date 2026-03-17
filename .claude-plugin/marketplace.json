@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "사내 QA 자동화 플러그인 마켓플레이스",
-    "version": "2.7.0"
+    "version": "2.8.0"
   },
   "plugins": [
     {
@@ -16,7 +16,7 @@
         "url": "https://github.com/MediSolveAIDev/QA-MEDI-PLUGIN.git"
       },
       "description": "QA AI 에이전트 팀 운영 시스템 - Orchestrator 기반 자율 협업 (14개 에이전트)",
-      "version": "2.7.0",
+      "version": "2.8.0",
       "author": {
         "name": "MediSolveAIDev"
       },
