@@ -479,6 +479,56 @@ TC에 직접 추가하지 않고, 팀장에게 검토 의견으로 제출한다.
 ## 10. 검토 완료 후 동작
 
 - **결과 저장**: `data/reviews/{PROJECT}_{version}_{feature}_review-tc.json`
+- **누적 저장**: 리뷰 라운드마다 `review_history` 배열에 추가 (덮어쓰기 금지)
+
+### JSON 구조
+
+```json
+{
+  "metadata": {
+    "project": "SAY",
+    "version": "v1.4",
+    "feature": "로그인",
+    "reviewer": "review-tc",
+    "total_rounds": 2
+  },
+  "current_verdict": "PASS",
+  "review_history": [
+    {
+      "round": 1,
+      "phase": "1-B",
+      "target": "tc",
+      "verdict": "FEEDBACK",
+      "timestamp": "2026-03-17T11:00:00",
+      "coverage_score": 80,
+      "findings": [
+        {
+          "severity": "높음",
+          "type": "누락",
+          "detail": "비밀번호 5회 오류 시 계정 잠금 TC 누락",
+          "recommendation": "TC 추가: 비밀번호 5회 실패 → 계정 잠금 → 잠금 해제 플로우"
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "phase": "1-B",
+      "target": "tc",
+      "verdict": "PASS",
+      "timestamp": "2026-03-17T11:30:00",
+      "coverage_score": 95,
+      "findings": []
+    }
+  ]
+}
+```
+
+### 저장 규칙
+
+| 상황 | 동작 |
+|------|------|
+| 파일 없음 (첫 리뷰) | 새 파일 생성, `review_history[0]`에 기록 |
+| 파일 있음 (재리뷰) | 기존 파일 읽기 → `review_history`에 다음 라운드 추가 → `current_verdict` 갱신 |
 - **Pass** → 팀장에게 "리뷰 Pass" 보고 (Slack 알림)
 - **피드백 있음** → 누락 목록 반환 → 작성자에게 보완 요청
 - QA 고도화 제안은 별도로 팀장에게 전달 (TC에 직접 반영하지 않음)
