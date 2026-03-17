@@ -58,7 +58,7 @@ python -m orchestrator.cli_state list
 사용자가 업무를 요청하면:
 
 1. 부족한 정보 질문 (프로젝트, 버전, 기능명, 기획서 URL)
-2. `config/projects/*.json`에서 프로젝트 정보 자동 참조
+2. `config/project.json`에서 프로젝트 정보 자동 참조
 3. `python -m orchestrator.cli_state init {프로젝트} {버전} {기능} {기획서URL}` 실행
 4. Phase 0부터 순차 진행
 

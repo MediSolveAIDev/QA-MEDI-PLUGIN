@@ -14,7 +14,34 @@
 - **Orchestrator**: Claude Code가 직접 파이프라인 관리, Skill 도구로 각 스킬 호출, JSON으로 상태 관리
 - **스킬**: 각 역할에 특화된 SKILL.md 정의 (15개)
 - **운영 방식**: 팀장 지시 → Claude Code가 Skill 도구로 스킬 순차 호출 → 승인 포인트에서 대기 → 최종 보고
-- **대상 프로젝트**: SAY, BAY, SSO (프로젝트별 병렬 파이프라인)
+- **대상 프로젝트**: SAY, BAY, SSO (프로젝트별 별도 레포)
+
+### 멀티레포 구조
+
+플러그인은 글로벌 설치. 각 프로젝트 레포에서 독립 실행하며, **산출물은 실행한 프로젝트 루트에 저장**된다.
+
+```
+QA/                          ← 로컬 QA 작업 폴더
+├── qa_agent/                ← 플러그인 레포 (글로벌 설치)
+├── say-admin/               ← SAY 프로젝트 레포 (여기서 /init → /setup → 스킬 실행)
+│   ├── config/              ← 이 프로젝트의 설정
+│   ├── data/                ← 이 프로젝트의 산출물
+│   └── tests/               ← 이 프로젝트의 자동화 코드
+├── bay-admin/               ← BAY 프로젝트 레포
+│   ├── config/
+│   ├── data/
+│   └── tests/
+└── sso/                     ← SSO 프로젝트 레포
+    ├── config/
+    ├── data/
+    └── tests/
+```
+
+**핵심 규칙:**
+- 모든 경로(`data/`, `config/`, `tests/`)는 **현재 프로젝트 루트 기준 상대 경로**
+- `/init`은 각 프로젝트 루트에서 실행 → 해당 프로젝트에 폴더 구조 생성
+- `/setup`은 해당 프로젝트의 설정만 구성 (`config/project.json` 1개)
+- 프로젝트 간 데이터는 공유하지 않음 (각자 독립)
 
 ---
 
@@ -70,16 +97,17 @@
 
 ## 3. 에이전트 운영 규칙
 
-### 3.0 온보딩 (최초 1회)
-- 플러그인 설치 후 `/init` → `/setup` 순서로 실행
-- `/init`: 로컬 폴더 구조 + 빈 config 파일 생성
-- `/setup`: 공통 설정(`config/common.json`) + 프로젝트별 설정(`config/projects/*.json`) + API 키(`.env`) 대화형 입력
+### 3.0 온보딩 (프로젝트별 1회)
+- 각 프로젝트 루트에서 `/init` → `/setup` 순서로 실행
+- `/init`: 프로젝트 루트에 폴더 구조 + 빈 config 파일 생성
+- `/setup`: 공통 설정(`config/common.json`) + 프로젝트 설정(`config/project.json`) + API 키(`.env`) 대화형 입력
 - 온보딩 완료 즉시 업무 요청 가능 (별도 설정 파일 수동 편집 불필요)
-- 이후 `/setup check`로 설정 상태 확인, `/setup update {프로젝트}`로 변경 가능
+- 이후 `/setup check`로 설정 상태 확인, `/setup update`로 변경 가능
 
 **⚠️ 자동 감지 규칙 (필수):**
-- `config/` 폴더가 없으면: `"⚠️ 작업 환경이 초기화되지 않았습니다. /init 을 먼저 실행해주세요."`
+- `config/` 폴더가 없으면: `"⚠️ 이 프로젝트에서 초기화가 되지 않았습니다. /init 을 먼저 실행해주세요."`
 - `config/common.json`의 필수 값(`jira.base_url`, `confluence.base_url`)이 비어있으면: `"⚠️ 환경 설정이 완료되지 않았습니다. /setup 으로 초기 세팅을 먼저 진행해주세요."`
+- `config/project.json`이 없으면: `"⚠️ 프로젝트 설정이 없습니다. /setup 을 실행해주세요."`
 - `.env` 파일이 없으면: `"⚠️ .env 파일이 없습니다. /setup 을 실행하여 API 키를 설정해주세요."`
 - 사용자가 업무 요청 시에도 미설정 감지되면 안내 후 진행 여부 확인
 - 온보딩 완료 상태면 안내 없이 바로 업무 수행
@@ -87,7 +115,7 @@
 ### 3.1 트리거 규칙
 - 팀장은 **자유 형식**으로 지시 (예: "새 업무 줄게", "SAY 처리해", "TC 리뷰해줘")
 - Orchestrator가 **부족한 정보를 자동 질문**하여 수집 (프로젝트, 버전, 기획서 링크 등)
-- `config/projects/*.json`에서 프로젝트 컨텍스트 자동 참조
+- `config/project.json`에서 프로젝트 컨텍스트 자동 참조
 - **정보 수집 완료 → 진행 계획을 팀장에게 보고 → 팀장 확인 후 실행**
 - **Claude Code가 Orchestrator 역할**로 Skill 도구를 통해 각 스킬을 직접 호출
 - 파이프라인 상태는 `data/pipeline/*.json`에 저장 (세션 간 유지)
@@ -199,13 +227,10 @@ qa_agent/
 │       ├── assess-automation/SKILL.md   (신규) Automation Assessor
 │       ├── write-test-code/SKILL.md     (기존) Test Coder
 │       └── analyze-fail/SKILL.md        (신규) Fail Analyzer
-├── agents/                            ← 에이전트 설정/프로필
-├── config/                            ← 환경 설정
-│   └── projects/                        ← 프로젝트별 설정/상태 (Orchestrator 참조)
-│       ├── say.json
-│       ├── bay.json
-│       └── sso.json
-├── data/                              ← 에이전트 산출물 (파일명으로 프로젝트 구분)
+├── config/                            ← 환경 설정 (프로젝트 루트에 생성)
+│   ├── common.json                      ← 공통 설정 (JIRA URL, Confluence URL 등)
+│   └── project.json                     ← 현재 프로젝트 설정 (1개만)
+├── data/                              ← 에이전트 산출물 (프로젝트 루트에 생성)
 │   ├── scenarios/                       ← Scenario Writer
 │   ├── tc/                              ← TC Writer
 │   ├── reviews/                         ← Format Checker + Spec Reviewer + QA Reviewer + Impact Analyzer
@@ -231,30 +256,30 @@ qa_agent/
 
 ## 5. 산출물 파일명 규칙
 
-모든 산출물은 프로젝트별 하위 폴더 없이, **파일명에 프로젝트명을 포함**하여 구분한다.
+모든 산출물은 **실행한 프로젝트 루트** 기준 상대 경로에 저장된다. 프로젝트 컨텍스트는 `config/project.json`에서 자동 참조하므로 파일명에 프로젝트명 접두사는 선택사항이다.
 
 ### 네이밍 패턴
 ```
-{프로젝트}_{버전}_{기능명}_{산출물유형}.json
+{버전}_{기능명}_{산출물유형}.json
 ```
 
-### 예시
+### 예시 (say-admin/ 에서 실행 시)
 | 산출물 | 파일명 | 저장 위치 |
 |--------|--------|-----------|
-| 시나리오 | `SAY_v3.2_로그인_scenario.json` | `data/scenarios/` |
-| TC | `BAY_v1.0_결제_tc.json` | `data/tc/` |
-| 리뷰 | `SAY_v3.2_로그인_review-spec.json` | `data/reviews/` |
-| 자동화 검토 | `SSO_v2.0_인증_assessment.json` | `data/assessments/` |
-| FAIL 분석 | `SAY_v3.2_로그인_fail-analysis.json` | `data/fail_analysis/` |
-| 버그 리포트 | `BAY_v1.0_결제_bug.json` | `data/bugs/` |
-| 테스트 코드 | `test_SAY_v3.2_로그인.py` | `tests/` |
-| 파이프라인 | `SAY_v3.2_pipeline.json` | `data/pipeline/` |
+| 시나리오 | `v3.2_로그인_scenario.json` | `./data/scenarios/` |
+| TC | `v3.2_로그인_tc.json` | `./data/tc/` |
+| 리뷰 | `v3.2_로그인_review-spec.json` | `./data/reviews/` |
+| 자동화 검토 | `v3.2_인증_assessment.json` | `./data/assessments/` |
+| FAIL 분석 | `v3.2_로그인_fail-analysis.json` | `./data/fail_analysis/` |
+| 버그 리포트 | `v3.2_로그인_bug.json` | `./data/bugs/` |
+| 테스트 코드 | `test_v3.2_로그인.py` | `./tests/` |
+| 파이프라인 | `v3.2_pipeline.json` | `./data/pipeline/` |
 
 ### 규칙
-- 프로젝트명은 대문자 (SAY, BAY, SSO)
 - 버전은 `v{major}.{minor}` 형식
 - 기능명은 한글 허용, 공백 대신 `_` 사용
 - 산출물 유형 접미사로 종류 구분
+- 프로젝트명은 `config/project.json`에서 자동 참조 (파일명에 중복 불필요)
 
 ---
 
@@ -300,4 +325,4 @@ qa_agent/
 
 ---
 
-**최종 업데이트:** 2026-03-17 (v2.8.0 - report-bug 2-Phase 설계 + 활성화, JIRA 중복확인/이력분석/티켓실행, setup에 Atlassian MCP 설정 추가)
+**최종 업데이트:** 2026-03-17 (v2.8.1 - 멀티레포 구조 전환, 프로젝트 루트 기준 상대 경로, config/project.json 단일 설정)

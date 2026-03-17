@@ -6,9 +6,9 @@
 
 ## 1. 개요
 
-- **역할**: 팀원이 플러그인 설치 후 처음 실행하는 초기 세팅 가이드
-- **실행 시점**: 플러그인 설치 직후, 또는 새 프로젝트 추가/설정 변경 시
-- **목표**: `config/common.json`, `config/projects/*.json`, `.env` 파일을 대화형으로 완성
+- **역할**: 각 프로젝트 루트에서 실행하는 초기 세팅 가이드
+- **실행 시점**: 프로젝트에서 `/init` 실행 후, 또는 설정 변경 시
+- **목표**: `config/common.json`, `config/project.json`, `.env` 파일을 대화형으로 완성
 
 ---
 
@@ -23,7 +23,7 @@
 아래 순서로 진행:
 
 1. **공통 설정 확인** (`config/common.json`)
-2. **프로젝트 선택 및 설정** (`config/projects/*.json`)
+2. **프로젝트 설정** (`config/project.json`)
 3. **API 키 확인** (`.env`)
 4. **연결 테스트** (선택)
 5. **설정 완료 요약**
@@ -80,26 +80,17 @@
 ```
 
 **처리 규칙:**
-- 입력된 값은 `config/common.json`에 즉시 반영
+- 입력된 값은 프로젝트 루트의 `config/common.json`에 즉시 반영
 - 빈 값은 기존 값 유지 (엔터만 치면 스킵)
 - URL 형식 기본 검증 (https:// 시작 여부)
+- 다른 프로젝트에서 이미 설정한 common.json이 있으면 값을 복사할지 안내
 
-### Step 2: 프로젝트 설정 (`config/projects/*.json`)
+### Step 2: 프로젝트 설정 (`config/project.json`)
 
-```
-📁 어떤 프로젝트를 세팅할까요?
-
-현재 등록된 프로젝트:
-  1. SAY (Admin v1.4.0) - ⚠️ 미설정 항목 5개
-  2. BAY (Admin v1.0.0) - ⚠️ 미설정 항목 7개
-  3. SSO (v1.0.0) - ⚠️ 미설정 항목 7개
-  4. [새 프로젝트 추가]
-```
-
-선택 후 해당 프로젝트의 항목 수집:
+현재 프로젝트 루트의 `config/project.json`을 대화형으로 채운다.
 
 ```
-📁 SAY 프로젝트 설정
+📁 현재 프로젝트 설정
 
 1. 기본 정보
    - 현재 버전: (기본값: v1.4.0)
@@ -295,15 +286,12 @@ tools/ 폴더 상태:
 ✅ 환경 설정 완료!
 
 공통 설정: config/common.json ✅
-프로젝트 설정:
-  - SAY: config/projects/say.json ✅
-  - BAY: config/projects/bay.json ⚠️ (Figma 미설정)
-  - SSO: config/projects/sso.json ⚠️ (전체 미설정)
+프로젝트 설정: config/project.json ✅ (SAY, admin, v1.4.0)
 API 키: .env ⚠️ (FIGMA_ACCESS_TOKEN 미설정)
 Atlassian MCP: ✅ 연결됨 / ❌ 미설정 (JIRA 버그 관리 비활성)
 Figma Export: tools/figma_extract.py ✅ / figma_output/ ✅
 
-💡 나중에 변경하려면: /setup update SAY
+💡 나중에 변경하려면: /setup update
 💡 상태 확인하려면: /setup check
 ```
 
@@ -334,18 +322,10 @@ Figma Export: tools/figma_extract.py ✅ / figma_output/ ✅
 
 ---
 
-## 4. 새 프로젝트 추가 (`/setup new`)
+## 4. 설정 변경 (`/setup update`)
 
-```
-📁 새 프로젝트를 추가합니다.
-
-- 프로젝트 코드명: (영문, 예: SAY)
-- 프로젝트 표시명: (예: Centurion Say)
-- 플랫폼: admin / app / web
-- 초기 버전: (예: v1.0.0)
-```
-
-→ `config/projects/{코드명}.json` 생성 후 Step 2와 동일한 세팅 진행
+현재 프로젝트의 `config/project.json` 또는 `config/common.json` 값을 수정한다.
+변경할 항목만 선택적으로 업데이트.
 
 ---
 
@@ -363,11 +343,12 @@ Figma Export: tools/figma_extract.py ✅ / figma_output/ ✅
 
 ## 6. 파일 처리 규칙
 
-- **config/common.json**: 공통 설정 저장 (JIRA URL, Confluence 등)
-- **config/projects/*.json**: 프로젝트별 설정 저장
+- **config/common.json**: 공통 설정 저장 (JIRA URL, Confluence URL 등 — 모든 프로젝트 동일)
+- **config/project.json**: 현재 프로젝트 설정 저장 (프로젝트 키, 버전, Figma 등)
 - **.env**: API 토큰/비밀번호 저장 (git 추적 안 됨)
 
 **주의사항:**
 - `.env` 파일은 절대 git에 커밋하지 않음
 - API 토큰 입력 시 "화면에 표시됩니다" 경고 출력
 - 기존 설정 파일이 있으면 덮어쓰지 않고 빈 값만 업데이트
+- 모든 경로는 프로젝트 루트 기준 상대 경로

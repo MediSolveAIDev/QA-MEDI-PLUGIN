@@ -1,4 +1,4 @@
-# QA-MEDI-PLUGIN v2.8.0
+# QA-MEDI-PLUGIN v2.8.1
 
 QA AI 에이전트 팀 운영 플러그인 — Claude Code 스킬 기반
 

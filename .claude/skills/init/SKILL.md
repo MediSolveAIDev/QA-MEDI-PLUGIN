@@ -6,9 +6,9 @@
 
 ## 1. 개요
 
-- **역할**: 플러그인 설치 후 로컬 작업 디렉토리에 필요한 폴더 구조 + 기본 파일 생성
-- **실행 시점**: 플러그인 설치 직후, `/setup` 실행 전에 1회 실행
-- **목표**: 스킬이 산출물을 저장하고 설정을 읽을 수 있는 로컬 환경을 만든다
+- **역할**: 각 프로젝트 루트에 필요한 폴더 구조 + 기본 파일 생성
+- **실행 시점**: 각 프로젝트에서 최초 1회 실행 (`/setup` 전에)
+- **목표**: 현재 프로젝트 루트에 스킬이 산출물을 저장하고 설정을 읽을 수 있는 환경을 만든다
 
 ---
 
@@ -22,12 +22,11 @@
 
 ## 3. 생성할 폴더 구조
 
-현재 작업 디렉토리에 아래 구조를 생성한다. **이미 존재하는 폴더/파일은 건드리지 않는다.**
+현재 프로젝트 루트에 아래 구조를 생성한다. **이미 존재하는 폴더/파일은 건드리지 않는다.**
 
 ```
-./
+./                             ← 프로젝트 루트 (say-admin/, bay-admin/ 등)
 ├── config/
-│   └── projects/
 ├── data/
 │   ├── scenarios/
 │   ├── tc/
@@ -77,85 +76,21 @@
 }
 ```
 
-### 4.2 config/projects/say.json (없을 때만 생성)
+### 4.2 config/project.json (없을 때만 생성)
+
+현재 프로젝트의 설정 파일. `/setup`에서 값을 채운다.
 
 ```json
 {
-  "name": "SAY",
-  "platform": "admin",
+  "name": "",
+  "platform": "",
   "current_version": "",
   "jira": {
-    "project_key": "SAY",
+    "project_key": "",
     "board_id": ""
   },
   "confluence": {
-    "space_key": "SAY",
-    "parent_page_id": "",
-    "pages": {
-      "scenarios": "",
-      "test_cases": "",
-      "reports": ""
-    }
-  },
-  "figma": {
-    "file_id": ""
-  },
-  "automation": {
-    "test_repo": "",
-    "script_path": "",
-    "base_url": "",
-    "framework": "pytest"
-  },
-  "features": {}
-}
-```
-
-### 4.3 config/projects/bay.json (없을 때만 생성)
-
-```json
-{
-  "name": "BAY",
-  "platform": "admin",
-  "current_version": "",
-  "jira": {
-    "project_key": "BAY",
-    "board_id": ""
-  },
-  "confluence": {
-    "space_key": "BAY",
-    "parent_page_id": "",
-    "pages": {
-      "scenarios": "",
-      "test_cases": "",
-      "reports": ""
-    }
-  },
-  "figma": {
-    "file_id": ""
-  },
-  "automation": {
-    "test_repo": "",
-    "script_path": "",
-    "base_url": "",
-    "framework": "pytest"
-  },
-  "features": {}
-}
-```
-
-### 4.4 config/projects/sso.json (없을 때만 생성)
-
-```json
-{
-  "name": "SSO",
-  "platform": "common",
-  "current_version": "",
-  "jira": {
-    "project_key": "SSO",
-    "board_id": ""
-  },
-  "confluence": {
-    "space_key": "SSO",
+    "space_key": "",
     "parent_page_id": "",
     "pages": {
       "scenarios": "",
