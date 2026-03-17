@@ -148,10 +148,24 @@ FAIL을 직접 수정하지 않고, 정확한 원인 분류와 후속 조치를 
 ## 분석 완료 후 동작
 
 - 분석 결과 저장: `data/fail_analysis/{PROJECT}_{version}_fail-analysis.json`
-- **Slack 알림**: 팀장에게 분석 결과 요약 발송
-  - 실제 버그 발견 시 → 긴급 알림
-  - 코드 이슈만 있을 시 → 일반 알림
-- 팀장 확인 대기:
-  - 실제 버그 → JIRA 생성 여부 결정
-  - 코드 이슈 (auto_fixable) → 자동 수정 승인 여부
-  - 환경 이슈 → 재실행 또는 무시 결정
+- **Orchestrator에 분석 결과 전달** (Orchestrator가 후속 판단)
+
+### 후속 플로우 (Orchestrator 주도)
+
+1. **실제 버그 있는 경우**:
+   - Orchestrator → `/report-bug` Phase A 호출 (수집 모드)
+   - report-bug가 JIRA 후보 검색 + 이력 수집 + 보고서 출력
+   - Orchestrator가 보고서 분석 → 중복/리오픈/신규 추천안 작성
+   - 팀장에게 요약 + 추천안 제시 → 팀장 선별
+   - Orchestrator → `/report-bug` Phase B 호출 (실행 모드)
+   - report-bug가 JIRA 티켓 생성/리오픈/수정 + Google Sheet BTS ID 매핑
+
+2. **코드 이슈 (auto_fixable)**:
+   - Orchestrator → 팀장에게 자동 수정 승인 요청
+   - 승인 시 → `/write-test-code`에 수정 지시
+
+3. **환경 이슈**:
+   - Orchestrator → 팀장에게 재실행 또는 무시 결정 요청
+
+4. **TC 오류**:
+   - Orchestrator → TC 수정 필요 건 목록 → 팀장 확인 후 `/write-tc` 재작업

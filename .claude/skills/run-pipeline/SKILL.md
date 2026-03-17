@@ -151,9 +151,21 @@ python -m orchestrator.cli_state list
    - Skill `/write-test-code` 호출
    - 사용자에게 안내: "GitHub Actions에서 테스트를 실행하고 결과를 알려주세요."
 5. 테스트 결과 확인 후:
-   - FAIL 있으면: Skill `/analyze-fail` 호출 → 사용자에게 결과 보고
-   - **★ 승인 5 (자동)**: FAIL 없으면 자동 통과
-6. `update {ID} phase "4"` → Phase 4 시작
+   - **★ 승인 5 (자동)**: FAIL 없으면 자동 통과 → 7단계로
+   - FAIL 있으면: 6단계로
+6. **FAIL 처리 (analyze-fail → report-bug 2-Phase 플로우)**:
+   - ① Skill `/analyze-fail` 호출 → Fail 분류 (코드 이슈/실제 버그/환경 이슈/TC 오류)
+   - ② 실제 버그 있으면:
+     - Skill `/report-bug` Phase A 호출 (수집 모드: JIRA 후보 검색 + 이력 수집)
+     - Orchestrator가 보고서 분석 → 중복/리오픈/신규 추천안 작성
+     - 사용자에게 요약 + 추천안 제시 → **사용자 선별 대기**
+     - 사용자 방향 제시 후 → 실행 지시서 생성
+     - Skill `/report-bug` Phase B 호출 (실행 모드: JIRA 생성/리오픈/수정/링크)
+     - 실행 결과 요약 보고 + Google Sheet BTS ID 매핑
+   - ③ 코드 이슈 (auto_fixable): 사용자에게 자동 수정 승인 요청 → 승인 시 `/write-test-code` 재호출
+   - ④ 환경 이슈: 사용자에게 재실행 또는 무시 결정 요청
+   - ⑤ TC 오류: TC 수정 필요 건 목록 → 사용자 확인 후 `/write-tc` 재작업
+7. `update {ID} phase "4"` → Phase 4 시작
 
 ### Phase 4: 최종 보고
 

@@ -40,7 +40,7 @@
 | 2-1 | Figma Enricher | `/enrich-figma` | 신규 개발 |
 | 3 | TC Writer | `/write-tc` | 기존 (SAY 이관) |
 | 4 | Project Reporter | `/report-project` | 신규 개발 |
-| 5 | Bug Reporter | `/report-bug` | 비활성화 (JIRA 연동 후 활성화) |
+| 5 | Bug Reporter | `/report-bug` | 비활성화 (JIRA 연동 후 활성화) — 2-Phase 설계 완료 (수집+실행) |
 
 ### 분석/리뷰 (전 프로젝트 공통)
 
@@ -157,8 +157,11 @@ Phase 3: 자동화
   ★ 승인 4: 자동화 구현 여부 결정 (거부 시 Phase 4로 건너뜀)
   ② Test Coder (테스트 코드 생성)
   ③ GitHub Actions 실행 (수동)
-  ④ FAIL 발견 시 → Fail Analyzer
   ★ 승인 5: FAIL 분석 결과 확인 (FAIL 없으면 자동 통과)
+  ④ FAIL 발견 시 → Fail Analyzer (원인 분류)
+  ⑤ 실제 버그 → Bug Reporter Phase A (JIRA 후보 검색 + 이력 수집)
+  ⑥ Orchestrator 분석 → 중복/리오픈/신규 추천안
+  ⑦ 팀장 선별 → Bug Reporter Phase B (JIRA 생성/리오픈/수정 실행)
   ↓
 Phase 4: 최종 보고
   ① Project Reporter (리포트 생성)
