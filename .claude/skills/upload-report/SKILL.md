@@ -337,7 +337,37 @@ auth = HTTPBasicAuth(CONFLUENCE_EMAIL, CONFLUENCE_API_TOKEN)
 
 ---
 
-## 8. 확장 옵션
+## 8. 실행 조건 (트리거)
+
+### 8.1 자동 실행 (파이프라인 내)
+
+현재 파이프라인(`/run-pipeline`)에서 자동 호출되지 않음. 향후 Phase 3 완료 후 자동 호출로 전환 가능.
+
+### 8.2 수동 실행
+
+| 트리거 | 예시 |
+|--------|------|
+| 슬래시 명령 | `/upload-report` |
+| 자연어 | "결과 컨플에 올려줘", "리포트 업로드해줘" |
+
+### 8.3 실행 전 필수 조건
+
+| 조건 | 확인 방법 | 미충족 시 |
+|------|-----------|-----------|
+| `data/test_results/checklist_results.json` 존재 | 파일 존재 확인 | "테스트 결과 파일이 없습니다. 테스트를 먼저 실행해주세요." |
+| `.env`에 Confluence 설정 존재 | 환경변수 확인 | "Confluence 설정이 없습니다. `/setup`으로 설정해주세요." |
+| Confluence API 연결 가능 | API 호출 테스트 | "Confluence 연결 실패. URL/토큰을 확인해주세요." |
+
+### 8.4 실행 후 동작
+
+1. Confluence 페이지 생성
+2. 생성된 URL을 `data/confluence_report_url.txt`에 저장
+3. **사용자에게 URL 안내** + "Slack에도 공유할까요?" 확인
+4. 사용자 승인 시 → `/share-slack` 호출 안내
+
+---
+
+## 9. 확장 옵션
 
 | 기능 | 설명 |
 |------|------|

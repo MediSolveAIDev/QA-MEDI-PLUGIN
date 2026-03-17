@@ -236,7 +236,39 @@ if __name__ == "__main__":
 
 ---
 
-## 7. 확장 옵션
+## 7. 실행 조건 (트리거)
+
+### 7.1 자동 실행 (파이프라인 내)
+
+현재 파이프라인(`/run-pipeline`)에서 자동 호출되지 않음. 향후 Phase 3 완료 후 자동 호출로 전환 가능.
+
+### 7.2 수동 실행
+
+| 트리거 | 예시 |
+|--------|------|
+| 슬래시 명령 | `/share-slack` |
+| 자연어 | "슬랙에 공유해줘", "테스트 결과 알려줘" |
+
+### 7.3 실행 전 필수 조건
+
+| 조건 | 확인 방법 | 미충족 시 |
+|------|-----------|-----------|
+| `data/test_results/test_results.json` 존재 | 파일 존재 확인 | "테스트 결과 파일이 없습니다. 테스트를 먼저 실행해주세요." |
+| `.env`에 `SLACK_WEBHOOK_URL` 존재 | 환경변수 확인 | "Slack Webhook 설정이 없습니다. `/setup`으로 설정해주세요." |
+
+### 7.4 실행 순서 (권장)
+
+```
+테스트 실행 → /upload-report (Confluence) → /share-slack (Slack)
+```
+
+- `/upload-report`를 먼저 실행하면 `data/confluence_report_url.txt`이 생성됨
+- `/share-slack`은 이 URL을 자동으로 읽어서 Slack 메시지에 Confluence 링크 포함
+- `/upload-report` 없이 `/share-slack`만 실행해도 동작함 (Confluence 링크만 빠짐)
+
+---
+
+## 8. 확장 옵션
 
 프로젝트 필요에 따라 추가 가능:
 

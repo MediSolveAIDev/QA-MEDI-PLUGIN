@@ -14,15 +14,45 @@ argument-hint: "[TC 파일 경로 또는 시나리오 파일 경로]"
 
 코드 생성 전 대상 프로젝트의 기존 구조를 탐색한다.
 
-### 0.1 기존 테스트 파일 확인
+### 0.1 기존 테스트 파일 확인 + 고도화 판단
 - 대상 프로젝트의 `tests/` 폴더를 탐색하여 관련 기존 파일 확인
 - **동일 기능의 테스트 파일이 이미 존재하면** → 기존 파일에 함수 추가/수정 (신규 생성 금지)
 - **없으면** → 신규 파일 생성
 
-### 0.2 기존 헬퍼 유틸리티 확인
+**기존 파일이 있을 때 고도화 판단 절차:**
+
+1. **TC 매핑 비교**: 새 TC 목록과 기존 테스트 함수를 1:1 대조
+   - TC는 있는데 함수가 없음 → 함수 신규 추가
+   - TC와 함수가 있지만 TC 내용이 변경됨 → 기존 함수 수정
+   - TC가 삭제됨 → 기존 함수 deprecated 처리 (즉시 삭제 금지, 주석으로 표기)
+2. **셀렉터 점검**: 기존 함수의 셀렉터가 현재 UI와 불일치 → 셀렉터 업데이트
+3. **하드코딩 점검**: 기존 함수에 하드코딩된 URL, 테스트 데이터 → 환경변수/fixture로 전환
+4. **패턴 점검**: `bare assert` 사용, `time.sleep` 남용 등 → soft_* 함수, 명시적 대기로 전환
+
+### 0.2 기존 헬퍼 유틸리티 확인 + 신규 유틸 판단
 - `helpers/` 폴더의 기존 유틸리티 함수(`*_utils.py`) 탐색
 - 로그인, 페이지 이동, 데이터 세팅 등 반복 작업은 기존 함수 재사용
 - 기존 파일 수정 시 import, fixture, 기존 함수와의 일관성 유지
+
+**신규 유틸 함수 생성 기준:**
+
+| 조건 | 액션 |
+|------|------|
+| 동일 로직이 **2개 이상** 테스트 함수에서 반복 | 유틸로 분리 |
+| 1개 함수에서만 사용 | 분리하지 않음 (인라인 유지) |
+| 기존 유틸과 유사하지만 파라미터만 다름 | 기존 유틸에 파라미터 추가 |
+
+**유틸 카테고리 및 파일 네이밍:**
+
+| 카테고리 | 파일명 | 예시 함수 |
+|----------|--------|-----------|
+| 인증 | `helpers/login_utils.py` | `login()`, `logout()`, `get_auth_token()` |
+| 페이지 이동 | `helpers/page_utils.py` | `navigate_to()`, `wait_for_page()` |
+| 데이터 세팅 | `helpers/data_utils.py` | `create_test_data()`, `cleanup_data()` |
+| 공통 검증 | `helpers/assert_utils.py` | `check_toast_message()`, `check_modal()` |
+| API 호출 | `helpers/api_utils.py` | `api_request()`, `setup_via_api()` |
+
+> 기존 프로젝트에 다른 유틸 구조가 있으면 해당 구조를 따른다.
 
 ### 0.3 네이밍 컨벤션 확인
 - 기존 `tests/` 폴더의 파일명 패턴을 확인하여 동일 패턴으로 생성
@@ -399,3 +429,203 @@ def test_login_placeholder(page):
 ```
 
 사용 가능한 마커: ui, functional, user_scenario, exception, performance, high, medium, low, smoke, regression
+
+---
+
+## 11. 테스트 실행 파일 (run_tests)
+
+전체 테스트를 한 번에 실행하는 엔트리포인트 스크립트를 구성한다.
+
+### 11.1 기본 구조
+
+```python
+# run_tests.py (프로젝트 루트)
+import subprocess
+import sys
+import os
+from datetime import datetime
+
+def run_tests(marker=None, parallel=False, headed=False):
+    """pytest 실행 래퍼"""
+    cmd = [
+        sys.executable, "-m", "pytest",
+        "tests/",
+        "-v",
+        "--tb=short",
+        f"--json-report-file=data/test_results/test_results.json",
+    ]
+
+    if marker:
+        cmd += ["-m", marker]
+    if parallel:
+        cmd += ["-n", "auto"]  # pytest-xdist
+    if headed:
+        cmd += ["--headed"]
+
+    # 환경변수로 headless 제어
+    if not headed:
+        os.environ["PLAYWRIGHT_HEADLESS"] = "1"
+
+    print(f"[{datetime.now()}] 테스트 실행: {' '.join(cmd)}")
+    result = subprocess.run(cmd, capture_output=False)
+    return result.returncode
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--marker", "-m", help="pytest 마커 (smoke, regression 등)")
+    parser.add_argument("--parallel", "-p", action="store_true", help="병렬 실행")
+    parser.add_argument("--headed", action="store_true", help="브라우저 표시")
+    args = parser.parse_args()
+
+    exit_code = run_tests(marker=args.marker, parallel=args.parallel, headed=args.headed)
+    sys.exit(exit_code)
+```
+
+### 11.2 실행 예시
+
+```bash
+# 전체 실행
+python run_tests.py
+
+# smoke 테스트만
+python run_tests.py -m smoke
+
+# 병렬 실행
+python run_tests.py -p
+
+# 브라우저 표시 (디버깅)
+python run_tests.py --headed
+```
+
+### 11.3 필수 설정 파일
+
+**pytest.ini 또는 pyproject.toml:**
+```ini
+[pytest]
+markers =
+    smoke: 핵심 기능 검증
+    regression: 회귀 테스트
+    high: 우선순위 높음
+    medium: 우선순위 보통
+    low: 우선순위 낮음
+testpaths = tests
+addopts = --tb=short -v
+timeout = 300
+```
+
+**conftest.py 필수 항목:**
+- `page` fixture (Playwright 브라우저 세션)
+- `base_url` fixture (환경변수에서 읽기)
+- pytest-json-report 플러그인 설정
+- ChecklistReporter 결과 저장 경로 설정
+
+---
+
+## 12. GitHub Actions 워크플로
+
+### 12.1 워크플로 파일 템플릿
+
+```yaml
+# .github/workflows/test.yml
+name: Run Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      marker:
+        description: "pytest 마커 (smoke, regression, 빈값=전체)"
+        required: false
+        default: ""
+      project:
+        description: "프로젝트 (SAY, BAY, SSO)"
+        required: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium
+          playwright install-deps
+
+      - name: Run tests
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          TEST_USER: ${{ secrets.TEST_USER }}
+          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+          PLAYWRIGHT_HEADLESS: "1"
+        run: |
+          if [ -n "${{ inputs.marker }}" ]; then
+            python run_tests.py -m "${{ inputs.marker }}"
+          else
+            python run_tests.py
+          fi
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ inputs.project }}
+          path: data/test_results/
+          retention-days: 30
+```
+
+### 12.2 GitHub Secrets 매핑
+
+| `.env` 변수 | GitHub Secret | 용도 |
+|-------------|---------------|------|
+| `BASE_URL` | `BASE_URL` | 테스트 대상 URL |
+| `TEST_USER` | `TEST_USER` | 테스트 계정 ID |
+| `TEST_PASSWORD` | `TEST_PASSWORD` | 테스트 계정 PW |
+| `CONFLUENCE_API_TOKEN` | `CONFLUENCE_API_TOKEN` | Confluence 업로드 |
+| `SLACK_WEBHOOK_URL` | `SLACK_WEBHOOK_URL` | Slack 알림 |
+
+> `.env` 파일은 로컬 전용. GitHub Actions에서는 반드시 Secrets 사용.
+
+---
+
+## 13. GitHub Actions 실행 주의사항
+
+### 13.1 필수 규칙
+
+| 항목 | 규칙 |
+|------|------|
+| 브라우저 모드 | **headless 필수** (`PLAYWRIGHT_HEADLESS=1`). headed는 CI에서 불가 |
+| 타임아웃 | job 레벨 `timeout-minutes: 30` + pytest 레벨 `timeout=300` (개별 테스트 5분) |
+| 아티팩트 | `always()` 조건으로 실패해도 결과 파일 업로드 |
+| 시크릿 | `.env` 값을 GitHub Secrets로 1:1 매핑. 로그에 노출 금지 |
+| 재시도 | Flaky 테스트는 `pytest-rerunfailures` 사용 (`--reruns 2 --reruns-delay 3`) |
+
+### 13.2 Flaky 테스트 대응
+
+```yaml
+# 재시도 옵션 추가
+run: python -m pytest tests/ --reruns 2 --reruns-delay 3
+```
+
+- 최대 2회 재시도, 재시도 간 3초 대기
+- 재시도 후에도 실패하면 FAIL 확정
+
+### 13.3 병렬 실행 시 주의
+
+- `pytest-xdist` 사용 시 테스트 간 데이터 충돌 방지 필수
+- 같은 계정으로 동시 로그인 불가 → 테스트 계정을 분리하거나 순차 실행
+- ChecklistReporter 결과 파일 쓰기 충돌 → 병렬 시 파일명에 worker ID 포함
+
+### 13.4 디버깅
+
+- 실패 시 스크린샷 자동 저장: `page.screenshot(path=f"data/test_results/fail_{test_name}.png")`
+- 아티팩트로 스크린샷 함께 업로드
+- GitHub Actions 로그에서 pytest 출력 확인
