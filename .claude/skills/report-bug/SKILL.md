@@ -1,6 +1,6 @@
 # /report-bug - Bug Reporter
 
-> JIRA 티켓 관리 전담 에이전트. 버그 수집/정리 + JIRA 검색/이력 분석 + 티켓 실행(생성/리오픈/수정)까지 담당한다.
+> JIRA 티켓 관리 전담 에이전트. 버그 수집/등록 + 현황 조회/보고서 + 티켓 상태 관리까지 담당한다.
 >
 > **전제 조건**: Atlassian MCP 서버 연결 + JIRA 설정 완료 (`/setup`에서 설정)
 
@@ -8,18 +8,23 @@
 
 ## 1. 개요
 
-- **역할**: JIRA 전담 — 버그 정보 수집, 기존 티켓 검색/이력 분석, 티켓 실행(생성/리오픈/수정/링크)
-- **2-Phase 호출**: Orchestrator가 동일 스킬을 2회 호출한다
-  - **Phase A (수집)**: Fail 건 정보 수집 + JIRA 후보 검색 + 이력 분석 → 보고서 JSON 출력
-  - **Phase B (실행)**: Orchestrator의 실행 지시서를 받아 JIRA 액션 수행
-- **호출 시점**: `/analyze-fail`에서 실제 버그 판정 후, 또는 수동 테스트 중 버그 발견 시
-- **출력**: `data/bugs/{PROJECT}_{version}_{feature}_bug.json`
+- **역할**: JIRA 전담 — 버그 이슈 등록, 현황 조회/보고서, 티켓 상태 관리
+- **3개 모드**:
+  - **Mode 1: collect + execute** (Phase A/B) — 자동화 테스트 → 이슈 리스트 → 팀장 승인 → 티켓 등록
+  - **Mode 2: query** (Phase Q) — 프로젝트/상태/버전 등 필터 기반 버그 현황 조회 + QA 분석 보고서
+  - **Mode 3: manage** (Phase M) — 특정 티켓 상태 변경, 담당자 변경, 코멘트 추가
+- **호출 시점**: 파이프라인 Phase 3에서 자동 호출(Mode 1), 또는 팀장 직접 요청(Mode 2/3)
+- **출력**:
+  - Mode 1: `data/bugs/{PROJECT}_{version}_{feature}_bug.json`
+  - Mode 2: `data/bugs/{PROJECT}_{version}_report.json` + `data/bugs/{PROJECT}_{version}_report.html`
+  - Mode 3: 실행 결과 JSON (대화형 응답)
 
 ---
 
 ## 2. 실행
 
 ```
+# ── Mode 1: 이슈 등록 (파이프라인 연계) ──
 # Phase A: 수집 모드 (Orchestrator → report-bug)
 /report-bug collect SAY v1.4.0 --fail-analysis data/fail_analysis/SAY_v1.4.0_fail-analysis.json
 
@@ -28,35 +33,101 @@
 
 # 수동 호출 (팀장이 직접)
 /report-bug SAY
+
+# ── Mode 2: 현황 조회/보고서 ──
+/report-bug query SAY --version v1.4.0 --status Open,Reopened
+/report-bug query SAY --version v1.4.0 --severity Critical,Major --component "AI가이드"
+/report-bug query SAY --period 30d --assignee 김개발
+
+# ── Mode 3: 티켓 관리 ──
+/report-bug manage CENSAY-234 --action reopen --comment "v1.4.0에서 재발"
+/report-bug manage CENSAY-512 --action close --build "stg_v1.4.0-rc.4" --comment "정상 동작 확인"
+/report-bug manage CENSAY-301 --action assign --assignee 김개발
+/report-bug manage CENSAY-301 --action comment --comment "우회 방법 공유"
 ```
 
-### 2.1 전체 플로우
+### 2.1 모드별 요약
+
+| 모드 | 용도 | 호출 주체 | 출력 |
+|------|------|-----------|------|
+| Mode 1 (collect+execute) | 자동화 테스트 → 이슈 등록 | Orchestrator / 팀장 | bug JSON |
+| Mode 2 (query) | 버그 현황 조회 + QA 분석 보고서 | 팀장 | JSON + HTML |
+| Mode 3 (manage) | 티켓 상태/담당자/코멘트 변경 | 팀장 | 실행 결과 JSON |
+
+### 2.2 Mode 1 전체 플로우
 
 ```
-/analyze-fail → Fail 분류 (실제 버그 판별)
+[자동] 구글 시트 폴링 → FAIL 행 감지
       ↓
-/report-bug [Phase A: 수집]
-  ├─ 버그별 JIRA JQL 후보 검색
-  ├─ 후보 티켓 changelog 조회 (리오픈 이력, 상태 변경)
-  ├─ 후보 티켓 코멘트/링크 수집
-  └─ 정형화된 보고서 JSON 출력
+[자동] Phase A: 수집 + 분석
+  ├─ 1. 중복 확인: JQL로 기존 티켓 검색
+  ├─ 2. 이슈 판단: 실제 버그 / 환경 이슈 / 테스트 데이터 문제 / 기획 변경 분류
+  ├─ 3. 그룹핑: 동일 현상 묶기
+  ├─ 4. 상세 내용 정리: description 템플릿 자동 작성
+  ├─ 5. 심각도 추천
+  └─ 6. 등록 추천: 신규등록 / 리오픈 / 스킵
       ↓
-Orchestrator → 보고서 종합 분석
-  ├─ "CENSAY-234 리오픈 추천 (3번째 재발, 고질적)"
-  ├─ "신규 등록 추천 (유사 티켓 없음)"
-  └─ "CENSAY-301과 관련 있으나 별개 현상, 링크 연결 추천"
+[자동] 알림: "FAIL N건 → 버그 M건 분류 완료"
       ↓
-팀장에게 요약 + 추천안 제시 → 팀장 선별/방향 제시
+[자동] 이슈 리스트 제시
+  ├─ "BUG-001: 신규등록 추천 (유사 티켓 없음)"
+  ├─ "BUG-002: 리오픈 추천 (TEST-15와 동일 현상)"
+  └─ "BUG-003: 스킵 추천 (환경 이슈로 판단)"
       ↓
-Orchestrator → 실행 지시서 생성
+[수동] 팀장 검토 → 담당자 지정 → 컨펌
+  예: "1, 2번 등록해. 담당자 홍길동"
       ↓
-/report-bug [Phase B: 실행]
-  ├─ JIRA 티켓 생성 / 리오픈 / 수정 / 링크 연결
-  ├─ 첨부파일 업로드
-  └─ Google Sheet TC에 BTS ID 매핑
+[자동] Phase B: 실행
+  ├─ JIRA 티켓 생성 / 리오픈 (MCP)
+  └─ Google Sheet TC에 BTS ID 역기록
       ↓
-Orchestrator → 실행 결과 요약 보고
+[자동] 실행 결과 요약 보고
 ```
+
+### 2.3 폴링 설정
+
+#### 자연어 명령
+
+| 자연어 | 동작 |
+|--------|------|
+| "폴링 시작해" / "시트 감시 켜줘" / "FAIL 감시 시작" | `poll_sheet.py` 백그라운드 실행 + `.poll_active` 플래그 생성 |
+| "폴링 멈춰" / "시트 감시 꺼줘" / "FAIL 감시 중지" | `.poll_active` 플래그 삭제 (스크립트 일시정지) |
+| "폴링 종료해" | `.poll_stop` 플래그 생성 (스크립트 프로세스 종료) |
+| "폴링 상태" / "시트 감시 상태" | `.poll_active` 존재 여부 + `pending_bugs.json` 확인 |
+| "폴링 결과 보여줘" / "폴링 결과 확인" / "미등록 버그 있어?" | `data/bugs/pending_bugs.json` 읽고 등록안 제시 |
+
+> **"FAIL 분석 결과 확인해줘"**는 pipeline의 fail_analysis를 의미한다 (기존 파이프라인).
+> 폴링 결과를 확인할 때는 **"폴링 결과"**라는 키워드를 사용한다.
+
+#### 실행
+
+```bash
+# 폴링 시작 (백그라운드)
+python tools/poll_sheet.py --sheet {SHEET_ID} --tab {TAB_NAME} --interval 600 &
+
+# 예시
+python tools/poll_sheet.py --sheet 1MIPNna8-l4chjAtlSBEsYEn5kGqOaEjg7eBWBHtvHKc --tab "1.4.0의 사본"
+```
+
+#### 파일 구조
+
+| 파일 | 용도 |
+|------|------|
+| `tools/poll_sheet.py` | 폴링 스크립트 (`/init`에서 생성) |
+| `data/bugs/.poll_active` | 존재하면 폴링 활성화 |
+| `data/bugs/.poll_stop` | 존재하면 스크립트 종료 |
+| `data/bugs/pending_bugs.json` | 미등록 FAIL 분석 결과 (매 폴링 시 갱신) |
+
+#### 동작 규칙
+
+- FAIL 판단: J컬럼 = "F" + N컬럼(BTS ID) = 비어있음
+- 경로 조합: A~G컬럼 fill-down (상위 행에서 빈 셀 채움)
+- 중복 알림 방지: `alerted_rows` 관리. 이미 알림한 행은 재알림 안 함
+- 신규 FAIL이 없으면 알림 발송 안 함, `pending_bugs.json` 갱신 안 함
+- 등록 완료된 건: 시트 N컬럼에 BTS ID 입력되면 다음 폴링에서 자동 제외
+- 슬랙 알림: `.env`의 `SLACK_WEBHOOK_URL` 사용. UTF-8 인코딩 필수
+
+> **시트 정보는 실행 시 입력**. 매번 다른 시트를 대상으로 폴링 가능.
 
 ---
 
@@ -81,7 +152,56 @@ Orchestrator → 실행 결과 요약 보고
 9. 환경: (브라우저, OS, 테스트 서버)
 ```
 
+### 3.1.1 Description 템플릿
+
+이슈 생성 시 description은 아래 구조를 따른다. **반드시 멀티라인으로 전달** (`\n` 이스케이프 금지).
+
+```
+**[Test Environment]**
+
+- 플랫폼 정보 : {platform}
+- 빌드 버전 & 서버 : {build}
+- 계정 : {account}
+
+**[Precondition]**
+
+1. {전제조건_1}
+2. {전제조건_2}
+
+**[Step]**
+
+1. {재현_1단계}
+2. {재현_2단계}
+3. {재현_3단계}
+
+**[Actual Result]**
+
+- {실제 결과}
+
+**[Expected Result]**
+
+- {기대 결과}
+
+**[Note]**
+
+- {비고/재현빈도/관련정보}
+```
+
 미입력 항목은 추가 질문으로 수집.
+
+### 3.1.2 필드 자동/수동 매핑 규칙
+
+| 필드 | 소스 | 방식 | 비고 |
+|------|------|------|------|
+| 타이틀 (summary) | FAIL 내용 | **AI 자동 생성** | `[화면명] 현상 요약` 형식 |
+| 상세 내용 (description) | FAIL 내용 | **AI 자동 생성** | 3.1.1 템플릿 적용 |
+| 컴포넌트 | 구글 시트 | **시트에서 자동** | TC의 화면/컴포넌트 컬럼 |
+| 영향 버전 | 구글 시트 | **시트에서 자동** | TC의 버전 컬럼 |
+| 우선순위 | FAIL 패턴 분석 | **AI 추천** + 팀장 컨펌 | 재현 빈도, 영향 범위 기반 |
+| 담당자 | 팀장 지정 | **건별 수동** | 팀장이 이슈별로 직접 지정 (예: "이거 홍길동") |
+
+> **담당자 자동 매핑**: 컴포넌트 → 담당자 매핑 테이블을 만들면 자동화 가능.
+> 현재는 팀장이 건별로 지정하는 방식으로 운영. 필요 시 매핑 테이블 추가.
 
 ### 3.2 JIRA 후보 검색 (JQL)
 
@@ -285,24 +405,38 @@ Orchestrator에게 전달하는 수집 결과. Orchestrator가 이 데이터를 
 | 구성 요소 | 현황 | 필요 작업 |
 |-----------|------|-----------|
 | Atlassian MCP 권한 | `settings.json`에 `mcp__atlassian__*` 허용됨 | - |
-| Atlassian MCP 서버 | **미설치** | `.mcp.json`에 서버 등록 필요 |
+| Atlassian MCP 서버 | **연결 완료** (2026-03-24 검증) | - |
 | JIRA 설정값 구조 | `config/common.json` + `.env` 구조 정의됨 | `/setup`으로 실제 값 입력 |
 | Google Sheets MCP | 연동 완료 | BTS ID 역매핑에 활용 |
 
-#### 4.2.2 MCP vs REST API 기능 비교
+#### 4.2.2 MCP 검증 결과 (2026-03-24 TEST 프로젝트)
 
-| 기능 | Atlassian MCP | JIRA REST API 직접 호출 | 비고 |
-|------|:---:|:---:|------|
-| 이슈 생성 (기본 필드) | O | O | summary, description, priority, labels |
-| 이슈 생성 (커스텀 필드) | △ | O | MCP 서버 구현에 따라 다름 |
-| 첨부파일 (스크린샷) | △ | O | 대부분 MCP 미지원, API 직접 호출 필요 |
-| JQL 검색 (중복 확인) | O | O | |
-| 이슈 링크 (관련 이슈 연결) | △ | O | |
-| Transition (상태 변경) | O | O | |
-| 벌크 생성 (다건 일괄) | X | O | REST API `/rest/api/2/issue/bulk` |
-| Google Sheet BTS ID 매핑 | - | - | Google Sheets MCP로 별도 처리 |
+| 기능 | 결과 | MCP 도구 | 주의사항 |
+|------|:----:|----------|----------|
+| 이슈 생성 | **OK** | `jira_create_issue` | |
+| 이슈 수정 (필드) | **OK** | `jira_update_issue` | 담당자: 이름으로 통일 (예: `{"assignee": "홍길동"}`) |
+| 영향 버전 설정 | **OK** | `jira_update_issue` | `additional_fields: {"versions": [{"name": "1.0.0"}]}` |
+| 코멘트 추가 | **OK** | `jira_add_comment` | |
+| 상태 변경 | **OK** | `jira_transition_issue` | transition_id는 `jira_get_transitions`로 사전 조회 필요 |
+| JQL 검색 | **OK** | `jira_search` | `total: -1` 반환. 무한스크롤 방식 추가 로딩. 버전별 분할 조회 권장 |
 
-> **추천**: MCP 우선 + REST API 보완 조합. 기본 CRUD는 MCP, 첨부파일/커스텀필드/벌크는 API 직접 호출.
+> **줄바꿈 규칙 (필수)**
+>
+> description, comment 등 모든 텍스트 필드는 **반드시 실제 멀티라인(줄바꿈)으로 전달**해야 한다.
+> `\n` 이스케이프 문자열을 사용하면 리터럴 텍스트로 들어가서 줄바꿈이 안 된다.
+>
+> ```
+> # NG — \n 이스케이프 (줄바꿈 안 됨)
+> description: "1단계\n2단계\n3단계"
+>
+> # OK — 실제 멀티라인 (줄바꿈 정상)
+> description: "1단계
+> 2단계
+> 3단계"
+> ```
+>
+> **상태 변경 + 코멘트**: `transition_issue`의 comment 파라미터는 줄바꿈이 안 되므로,
+> 반드시 `transition_issue`(상태변경만) + `add_comment`(댓글 별도) **2단계 분리 실행**한다.
 
 #### 4.2.3 Atlassian MCP 서버 설치 방법
 
@@ -426,51 +560,290 @@ requests.post(
 
 ---
 
-## 7. 확장 가능성: 버그 현황 조회/분석 (Phase Q)
-
-> 현재는 이슈 중복 확인 + 등록(Phase A/B)만 구현 대상이다.
-> 향후 아래 기능으로 확장 가능하며, QA 관점 분석 기준은 활성화 시점에 구체화한다.
+## 7. Mode 2: 버그 현황 조회/보고서 (Phase Q)
 
 ### 7.1 개요
 
-JIRA에 이미 쌓인 버그 티켓을 **컴포넌트 + 영향 버전** 기준으로 조회하여 현황을 정리하는 모드.
+JIRA에 쌓인 버그 티켓을 필터 기반으로 조회하여 현황 리포트를 생성하는 모드.
+출력은 **JSON + HTML** 2종으로 동시 생성된다.
 
 ```
-팀장: "AI가이드 컴포넌트, v1.3.0~v1.4.0 버그 정리해줘"
+팀장: "SAY v1.4.0 버그 현황 정리해줘"
       ↓
-/report-bug query --component "AI가이드" --versions "v1.3.0,v1.4.0"
+/report-bug query SAY --version v1.4.0
       ↓
-JQL 조회 → changelog 수집 → 현황 리포트 출력
+JQL 조회 → changelog 수집 → QA 분석 → JSON + HTML 보고서 출력
 ```
 
-### 7.2 조회 가능 항목
+### 7.2 필터
 
-| 항목 | JQL / API | 비고 |
-|------|-----------|------|
-| 컴포넌트별 버그 목록 | `component = "X"` | |
-| 특정 버전 영향 버그 | `affectsVersion in ("v1.3.0", "v1.4.0")` | |
-| 상태별 분류 | `status` 필드 | Open/In Progress/Resolved/Closed/Reopened |
-| 심각도 분포 | `priority` 필드 | Critical/Major/Minor/Trivial |
-| 고질적 이슈 (리오픈 반복) | changelog `→ Reopened` 카운트 | |
-| 담당자별 현황 | `assignee` 필드 | 미배정 건 포함 |
-| 이슈 체인 | `issuelinks` | 연관 이슈 클러스터 |
+| 필터 | 플래그 | JQL 매핑 | 필수/옵션 |
+|------|--------|----------|-----------|
+| 프로젝트 | (위치 인자) | `project = {key}` | 필수 |
+| 상태 | `--status` | `status in (Open, Reopened)` | 옵션 (기본: 전체) |
+| 버전 | `--version` | `affectsVersion in ("v1.4.0")` | 옵션 |
+| 심각도 | `--severity` | `priority in (Critical, Major)` | 옵션 |
+| 컴포넌트 | `--component` | `component = "AI가이드"` | 옵션 |
+| 담당자 | `--assignee` | `assignee = "김개발"` | 옵션 |
+| 기간 | `--period` | `created >= -30d` | 옵션 (기본: 전체) |
+| 라벨 | `--label` | `labels = "QA-Agent"` | 옵션 |
+| 리포터 | `--reporter` | `reporter = "이QA"` | 옵션 |
 
-### 7.3 QA 관점 분석 (활성화 시 구체화 필요)
+**복합 필터 예시:**
+```bash
+# 릴리즈 go/no-go 판단용
+/report-bug query SAY --version v1.4.0 --severity Critical,Major --status Open,Reopened,"In Progress"
 
-아래는 출력에 포함할 QA 관점 분석 항목 후보. 실제 운영 시 팀 기준에 맞춰 확정한다.
+# 고질적 이슈 추적
+/report-bug query SAY --status Reopened --period 30d
 
-- **고질적 이슈 하이라이트**: 리오픈 2회 이상, 근본 원인 분석 필요 여부
-- **미해결 건 현황**: 담당자/상태/체류 기간
-- **영역 집중도**: 특정 컴포넌트/화면에 버그 집중 여부
-- **미배정 건**: 담당자 없는 티켓 알림
-- **릴리즈 리스크**: 해당 버전 미해결 Critical/Major 건수
-- **버그 트렌드**: 기간별 등록/해결 추이
+# 특정 영역 집중 분석
+/report-bug query SAY --component "AI가이드" --version v1.3.0,v1.4.0
+```
 
-> ⚠️ QA 관점 분석 기준은 팀 운영 경험이 쌓인 후 `/learn-rules`로 패턴화하여 규칙에 반영한다.
+### 7.3 조회 데이터 수집
+
+각 이슈에 대해 아래 정보를 수집한다:
+
+| 수집 항목 | API | 용도 |
+|-----------|-----|------|
+| 기본 필드 | `GET /search` (JQL) | summary, status, priority, assignee, component, created, updated |
+| 상태 변경 이력 | `expand=changelog` | 리오픈 횟수, 체류 기간 계산 |
+| 이슈 링크 | `fields.issuelinks` | 연관 이슈 클러스터 파악 |
+
+> ⚠️ 조회 결과 **최대 100건** 제한. 초과 시 필터 좁히기 안내.
+
+### 7.4 QA 분석 항목
+
+보고서에 포함되는 QA 관점 분석:
+
+| 분석 항목 | 설명 | 판단 기준 |
+|-----------|------|-----------|
+| **릴리즈 리스크** | 미해결 Critical/Major 건수 | Critical ≥1 → 릴리즈 보류 권고 |
+| **취약 영역** | 버그 집중 컴포넌트 | 전체 대비 30% 이상 집중 시 하이라이트 |
+| **고질적 이슈** | 리오픈 2회 이상 반복 건 | changelog 파싱, 근본 원인 분석 필요 표시 |
+| **처리 현황** | 해결률, 미배정 건, 장기 체류 건 | Open 14일 이상 체류 시 알림 |
+| **버그 트렌드** | 기간별 등록/해결 추이 | `--period` 지정 시 일별/주별 집계 |
+| **미배정 건** | 담당자 없는 티켓 | assignee = null |
+
+### 7.5 출력 형식
+
+#### 7.5.1 JSON (`data/bugs/{PROJECT}_{version}_report.json`)
+
+```json
+{
+  "mode": "query",
+  "project": "SAY",
+  "version": "v1.4.0",
+  "generated_at": "2026-03-24T10:00:00",
+  "filters": {
+    "status": ["Open", "Reopened"],
+    "severity": ["Critical", "Major"],
+    "component": null,
+    "assignee": null,
+    "period": null
+  },
+  "summary": {
+    "total": 31,
+    "by_status": {"Open": 11, "In Progress": 3, "Reopened": 2, "Resolved": 15},
+    "by_severity": {"Critical": 1, "Major": 7, "Minor": 15, "Trivial": 8},
+    "by_component": {"AI가이드": 12, "대시보드": 8, "설정": 6, "기타": 5},
+    "resolution_rate": 48.4,
+    "unassigned_count": 3
+  },
+  "analysis": {
+    "release_risk": {
+      "level": "high",
+      "message": "미해결 Critical 1건, Major 4건 → 릴리즈 보류 권고",
+      "blocking_issues": ["CENSAY-234"]
+    },
+    "vulnerable_areas": [
+      {"component": "AI가이드", "count": 12, "percentage": 38.7, "highlight": true}
+    ],
+    "chronic_issues": [
+      {"key": "CENSAY-234", "summary": "달력 모달 미닫힘", "reopen_count": 3},
+      {"key": "CENSAY-189", "summary": "날짜 필터 초기화", "reopen_count": 2}
+    ],
+    "stale_issues": [
+      {"key": "CENSAY-400", "summary": "차트 로딩 지연", "days_open": 21}
+    ],
+    "unassigned": [
+      {"key": "CENSAY-450", "summary": "알림 설정 미반영", "severity": "Major"}
+    ]
+  },
+  "issues": [
+    {
+      "key": "CENSAY-234",
+      "summary": "[AI가이드] 달력 모달 미닫힘",
+      "status": "Reopened",
+      "priority": "Critical",
+      "assignee": "김개발",
+      "component": "AI가이드",
+      "created": "2026-01-10",
+      "updated": "2026-03-20",
+      "reopen_count": 3,
+      "linked_issues": ["CENSAY-189"]
+    }
+  ]
+}
+```
+
+#### 7.5.2 HTML (`data/bugs/{PROJECT}_{version}_report.html`)
+
+단일 `.html` 파일 (CSS + Chart.js 인라인, 외부 의존성 없음).
+
+**구조:**
+
+```
+┌──────────────────────────────────────────────┐
+│  {PROJECT} {version} 버그 현황 리포트         │
+│  {날짜} 기준 | QA Agent 생성                  │
+├──────────────────────────────────────────────┤
+│  [요약 카드 4개]                              │
+│  총 버그 | 미해결 | 해결률 | 고질적 이슈       │
+├──────────────────────────────────────────────┤
+│  [차트 영역] Chart.js CDN 인라인              │
+│  ┌──────────┐ ┌──────────┐                   │
+│  │상태별     │ │심각도별   │                   │
+│  │도넛 차트  │ │바 차트    │                   │
+│  └──────────┘ └──────────┘                   │
+│  ┌──────────┐ ┌──────────┐                   │
+│  │컴포넌트별 │ │트렌드     │                   │
+│  │바 차트    │ │라인 차트  │                   │
+│  └──────────┘ └──────────┘                   │
+├──────────────────────────────────────────────┤
+│  [QA 분석 섹션]                               │
+│  ⚠️ 릴리즈 리스크: Critical 1건...            │
+│  🔥 취약 영역: AI가이드 38%                   │
+│  🔄 고질적 이슈: CENSAY-234 (3회 리오픈)      │
+│  ⏰ 장기 체류: CENSAY-400 (21일)              │
+│  👤 미배정: 3건                               │
+├──────────────────────────────────────────────┤
+│  [버그 리스트 테이블]                          │
+│  티켓키 | 요약 | 상태 | 심각도 | 담당자 | ...  │
+│  (정렬 가능, JIRA 링크 클릭)                   │
+└──────────────────────────────────────────────┘
+```
+
+**HTML 생성 규칙:**
+- Chart.js는 CDN URL을 `<script>` 태그로 인라인 포함
+- 테이블은 컬럼 헤더 클릭으로 정렬 가능 (JS 인라인)
+- 티켓 키는 JIRA URL 링크 (`config/common.json`의 `jira.base_url` + `/browse/{key}`)
+- 색상 코딩: Critical=빨강, Major=주황, Minor=노랑, Trivial=회색
+- 반응형 레이아웃 (모바일에서도 확인 가능)
 
 ---
 
-## 8. 규칙
+## 8. Mode 3: 티켓 관리 (Phase M)
+
+### 8.1 개요
+
+특정 JIRA 티켓의 상태 변경, 담당자 변경, 코멘트 추가를 수행하는 모드.
+팀장이 직접 요청하여 사용한다.
+
+```
+팀장: "CENSAY-234 리오픈해줘, v1.4.0에서 재발했어"
+      ↓
+/report-bug manage CENSAY-234 --action reopen --build "stg_v1.4.0-rc.4" --comment "달력 모달 미닫힘 재발"
+      ↓
+상태 변경 (transition) + 코멘트 자동 추가 → 결과 확인
+```
+
+### 8.2 지원 액션
+
+| 액션 | `--action` | API | 코멘트 |
+|------|-----------|-----|--------|
+| 리오픈 | `reopen` | `POST /issue/{key}/transitions` | **필수** (리오픈 템플릿) |
+| 종료 | `close` | `POST /issue/{key}/transitions` | **필수** (종료 템플릿) |
+| 담당자 변경 | `assign` | `PUT /issue/{key}` | 선택 |
+| 코멘트 추가 | `comment` | `POST /issue/{key}/comment` | 내용 직접 입력 |
+
+### 8.3 코멘트 템플릿
+
+#### 종료 시 (close)
+
+```
+- 확인 결과 : PASS
+- 플랫폼 정보 : {platform}
+- 빌드 버전 & 서버 : {build}
+- 확인 내용 : {comment}
+
+수정 확인하여 티켓 종료합니다.
+```
+
+**입력 매핑:**
+| 필드 | 플래그 | 기본값 | 비고 |
+|------|--------|--------|------|
+| `{platform}` | `--platform` | `Windows 11` | 자동 감지 또는 수동 입력 |
+| `{build}` | `--build` | (필수 입력) | 예: `stg_v1.4.0-rc.4`, `prod_v1.4.0` |
+| `{comment}` | `--comment` | (필수 입력) | 실제 확인 내용 |
+
+#### 리오픈 시 (reopen)
+
+```
+- 확인 결과 : FAIL
+- 플랫폼 정보 : {platform}
+- 빌드 버전 & 서버 : {build}
+- 확인 내용 : {comment}
+
+현상 재현되어 리오픈 합니다. 확인 부탁 드립니다.
+```
+
+**입력 매핑:** 종료 시와 동일 (`--platform`, `--build`, `--comment`)
+
+### 8.4 실행 플로우
+
+```
+1. 티켓 키로 현재 상태 조회 (jira_get_issue)
+2. 요청한 transition이 가능한지 확인 (jira_get_transitions)
+   - 불가능하면 현재 상태 + 가능한 transition 목록 안내 후 중단
+3. transition 실행 — 상태변경만 (jira_transition_issue, comment 파라미터 사용 X)
+4. 코멘트 템플릿 조립 후 별도 등록 (jira_add_comment, 멀티라인으로 전달)
+5. 결과 확인 후 응답
+```
+
+> **주의**: transition_issue의 comment 파라미터는 줄바꿈이 안 되므로
+> 반드시 3번(상태변경) → 4번(코멘트) 2단계로 분리 실행한다.
+
+### 8.5 실행 결과 JSON
+
+```json
+{
+  "mode": "manage",
+  "executed_at": "2026-03-24T14:30:00",
+  "action": "close",
+  "ticket": {
+    "key": "CENSAY-512",
+    "previous_status": "Resolved",
+    "new_status": "Closed",
+    "comment_added": true
+  },
+  "comment": "- 확인 결과 : PASS\n- 플랫폼 정보 : Windows 11\n- 빌드 버전 & 서버 : stg_v1.4.0-rc.4\n- 확인 내용 : 정상 동작 확인\n\n수정 확인하여 티켓 종료합니다."
+}
+```
+
+### 8.6 향후 확장 (v2)
+
+```
+팀장: "SAY Resolved 티켓 보여줘"
+      ↓
+/report-bug query SAY --status Resolved --version v1.4.0
+      ↓
+[Resolved 리스트 출력]
+  1. CENSAY-512 [대시보드] 차트 데이터 0건 표시
+  2. CENSAY-513 [설정] 알림 토글 반영 안됨
+  3. CENSAY-520 [AI가이드] 추천 카드 미노출
+      ↓
+팀장: "1번, 3번 종료해줘"
+      ↓
+선택 건 일괄 종료 (각각 코멘트 템플릿 적용)
+```
+
+> v2는 Mode 2 (query)와 Mode 3 (manage) 조합으로 자연스럽게 확장된다.
+
+---
+
+## 9. 규칙
 
 - summary는 `[화면명] 현상 요약` 형식 (50자 이내)
 - 재현 경로는 번호 매기기 필수 (1, 2, 3...)
@@ -480,3 +853,10 @@ JQL 조회 → changelog 수집 → 현황 리포트 출력
 - Phase B 실행 전 반드시 Orchestrator의 실행 지시서가 있어야 함 (직접 실행 금지)
 - 실행 실패 시 에러를 `execute_result`에 기록하고 Orchestrator에 보고 (재시도 안 함)
 - `/analyze-fail`에서 자동 호출 시 TC 행 번호 자동 매핑
+- **Jira 이슈 등록 후 구글 시트 BTS ID 역기록은 자동으로 수행한다** (별도 요청 불필요)
+  - 등록된 Jira 키(예: TEST-42)를 해당 TC 행의 N컬럼(BTS ID)에 기록
+  - Google Sheets MCP `update_cells` 사용
+- **TC Priority → 버그 심각도 변환**: 시트의 Priority는 TC 중요도이므로, 버그 등록 시 아래 기준으로 변환하여 추천
+  - 핵심 기능 동작 불가 + 우회 없음 → Highest/High
+  - 기능 동작하지만 비정상 + 우회 가능 → Medium
+  - UI/표시 문제 + 경미한 불편 → Low
