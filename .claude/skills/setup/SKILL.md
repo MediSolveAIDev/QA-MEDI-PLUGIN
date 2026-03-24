@@ -77,6 +77,11 @@
    - Organization: (기본값: MediSolveAIDev)
    - Actions Repo:
 
+4. Slack 알림 설정
+   - Webhook URL: (파이프라인 진행 알림용)
+     → 승인 전용 채널이 별도로 있으면 아래도 입력
+   - 승인 전용 Webhook URL: (선택, 승인 요청만 별도 채널로)
+
 ```
 
 **처리 규칙:**
@@ -288,6 +293,7 @@ tools/ 폴더 상태:
 공통 설정: config/common.json ✅
 프로젝트 설정: config/project.json ✅ (SAY, admin, v1.4.0)
 API 키: .env ⚠️ (FIGMA_ACCESS_TOKEN 미설정)
+Slack 알림: ✅ 설정됨 / ❌ 미설정 (파이프라인 알림 비활성)
 Atlassian MCP: ✅ 연결됨 / ❌ 미설정 (JIRA 버그 관리 비활성)
 Figma Export: tools/figma_extract.py ✅ / figma_output/ ✅
 

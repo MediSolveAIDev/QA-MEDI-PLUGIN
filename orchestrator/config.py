@@ -32,6 +32,7 @@ class CommonConfig:
     confluence_base_url: str
     github_org: str
     github_actions_repo: str
+    slack_webhook_url: str = ""
 
 
 @dataclass
@@ -41,6 +42,8 @@ class EnvConfig:
     confluence_url: str
     figma_access_token: str
     jira_api_token: str
+    slack_webhook_url: str = ""
+    slack_webhook_approval: str = ""
 
 
 def load_common_config() -> CommonConfig:
@@ -57,6 +60,7 @@ def load_common_config() -> CommonConfig:
         confluence_base_url=data.get("confluence", {}).get("base_url", ""),
         github_org=data.get("github", {}).get("org", ""),
         github_actions_repo=data.get("github", {}).get("actions_repo", ""),
+        slack_webhook_url=data.get("slack", {}).get("webhook_url", ""),
     )
 
 
@@ -91,6 +95,8 @@ def load_env() -> EnvConfig:
         confluence_url=os.getenv("CONFLUENCE_URL", ""),
         figma_access_token=os.getenv("FIGMA_ACCESS_TOKEN", ""),
         jira_api_token=os.getenv("JIRA_API_TOKEN", ""),
+        slack_webhook_url=os.getenv("SLACK_WEBHOOK_URL", ""),
+        slack_webhook_approval=os.getenv("SLACK_WEBHOOK_APPROVAL", ""),
     )
 
 

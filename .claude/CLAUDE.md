@@ -67,7 +67,7 @@ QA/                          ← 로컬 QA 작업 폴더
 | 2-1 | Figma Enricher | `/enrich-figma` | 신규 개발 |
 | 3 | TC Writer | `/write-tc` | 기존 (SAY 이관) |
 | 4 | Project Reporter | `/report-project` | 신규 개발 |
-| 5 | Bug Reporter | `/report-bug` | 활성화 (Atlassian MCP 연결 시 동작, `/setup`에서 설정) |
+| 5 | Bug Reporter | `/report-bug` | 활성화 (Atlassian MCP 연결 시 동작, `/setup`에서 설정) — 3개 모드: 이슈 등록(Mode 1) + 현황 조회/보고서(Mode 2) + 티켓 관리(Mode 3) |
 
 ### 분석/리뷰 (전 프로젝트 공통)
 
@@ -187,15 +187,19 @@ Phase 3: 자동화
   ③ GitHub Actions 실행 (수동)
   ★ 승인 5: FAIL 분석 결과 확인 (FAIL 없으면 자동 통과)
   ④ FAIL 발견 시 → Fail Analyzer (원인 분류)
-  ⑤ 실제 버그 → Bug Reporter Phase A (JIRA 후보 검색 + 이력 수집)
+  ⑤ 실제 버그 → Bug Reporter Mode 1 Phase A (JIRA 후보 검색 + 이력 수집)
   ⑥ Orchestrator 분석 → 중복/리오픈/신규 추천안
-  ⑦ 팀장 선별 → Bug Reporter Phase B (JIRA 생성/리오픈/수정 실행)
+  ⑦ 팀장 선별 → Bug Reporter Mode 1 Phase B (JIRA 생성/리오픈/수정 실행)
   ↓
 Phase 4: 최종 보고
   ① Project Reporter (리포트 생성)
   ② 크로스 프로젝트 해당 시 → Impact Analyzer
   ★ 승인 6: 크로스 프로젝트 영향도 확인 (해당 시에만)
   ③ 파이프라인 완료 요약 출력
+
+─── 독립 호출 (파이프라인 외) ───
+Bug Reporter Mode 2 (query): 팀장 직접 요청 → 버그 현황 조회 + QA 분석 보고서 (JSON + HTML)
+Bug Reporter Mode 3 (manage): 팀장 직접 요청 → 티켓 상태 변경, 담당자 변경, 코멘트 추가
 ```
 
 ### 3.6 Figma MCP 사용 규칙 (필수)
@@ -256,30 +260,32 @@ qa_agent/
 
 ## 5. 산출물 파일명 규칙
 
-모든 산출물은 **실행한 프로젝트 루트** 기준 상대 경로에 저장된다. 프로젝트 컨텍스트는 `config/project.json`에서 자동 참조하므로 파일명에 프로젝트명 접두사는 선택사항이다.
+모든 산출물은 **실행한 프로젝트 루트** 기준 상대 경로에 저장된다. 파일명에 프로젝트명을 포함하여 어떤 프로젝트의 산출물인지 명확히 구분한다.
 
 ### 네이밍 패턴
 ```
-{버전}_{기능명}_{산출물유형}.json
+{프로젝트}_{버전}_{기능명}_{산출물유형}.json
 ```
 
 ### 예시 (say-admin/ 에서 실행 시)
 | 산출물 | 파일명 | 저장 위치 |
 |--------|--------|-----------|
-| 시나리오 | `v3.2_로그인_scenario.json` | `./data/scenarios/` |
-| TC | `v3.2_로그인_tc.json` | `./data/tc/` |
-| 리뷰 | `v3.2_로그인_review-spec.json` | `./data/reviews/` |
-| 자동화 검토 | `v3.2_인증_assessment.json` | `./data/assessments/` |
-| FAIL 분석 | `v3.2_로그인_fail-analysis.json` | `./data/fail_analysis/` |
-| 버그 리포트 | `v3.2_로그인_bug.json` | `./data/bugs/` |
-| 테스트 코드 | `test_v3.2_로그인.py` | `./tests/` |
-| 파이프라인 | `v3.2_pipeline.json` | `./data/pipeline/` |
+| 시나리오 | `SAY_v3.2_로그인_scenario.json` | `./data/scenarios/` |
+| TC | `SAY_v3.2_로그인_tc.json` | `./data/tc/` |
+| 리뷰 | `SAY_v3.2_로그인_review-spec.json` | `./data/reviews/` |
+| 자동화 검토 | `SAY_v3.2_인증_assessment.json` | `./data/assessments/` |
+| FAIL 분석 | `SAY_v3.2_로그인_fail-analysis.json` | `./data/fail_analysis/` |
+| 버그 리포트 | `SAY_v3.2_로그인_bug.json` | `./data/bugs/` |
+| 버그 현황 보고서 (JSON) | `SAY_v3.2_report.json` | `./data/bugs/` |
+| 버그 현황 보고서 (HTML) | `SAY_v3.2_report.html` | `./data/bugs/` |
+| 테스트 코드 | `test_SAY_v3.2_로그인.py` | `./tests/` |
+| 파이프라인 | `SAY_v3.2_pipeline.json` | `./data/pipeline/` |
 
 ### 규칙
+- 프로젝트명은 대문자 (SAY, BAY, SSO) — `config/project.json`의 `name`에서 참조
 - 버전은 `v{major}.{minor}` 형식
 - 기능명은 한글 허용, 공백 대신 `_` 사용
 - 산출물 유형 접미사로 종류 구분
-- 프로젝트명은 `config/project.json`에서 자동 참조 (파일명에 중복 불필요)
 
 ---
 
@@ -325,4 +331,4 @@ qa_agent/
 
 ---
 
-**최종 업데이트:** 2026-03-17 (v2.8.1 - 멀티레포 구조 전환, 프로젝트 루트 기준 상대 경로, config/project.json 단일 설정)
+**최종 업데이트:** 2026-03-24 (v2.9.0 - Slack 알림 규칙 추가, report-bug MCP 검증 + 시트 폴링 + 버그 심각도 변환, 산출물 파일명 프로젝트명 접두사)
