@@ -90,10 +90,9 @@
 
 | 자연어 | 동작 |
 |--------|------|
-| "폴링 시작해" / "시트 감시 켜줘" / "FAIL 감시 시작" | `poll_sheet.py` 백그라운드 실행 + `.poll_active` 플래그 생성 |
-| "폴링 멈춰" / "시트 감시 꺼줘" / "FAIL 감시 중지" | `.poll_active` 플래그 삭제 (스크립트 일시정지) |
-| "폴링 종료해" | `.poll_stop` 플래그 생성 (스크립트 프로세스 종료) |
-| "폴링 상태" / "시트 감시 상태" | `.poll_active` 존재 여부 + `pending_bugs.json` 확인 |
+| "폴링 시작해" / "시트 감시 켜줘" / "FAIL 감시 시작" | `poll_sheet.py` 백그라운드 실행 (새 프로세스) |
+| "폴링 꺼줘" / "폴링 멈춰" / "폴링 종료해" / "시트 감시 꺼줘" | 프로세스 완전 종료 (`kill`) |
+| "폴링 상태" | 프로세스 실행 여부 + `pending_bugs.json` 확인 |
 | "폴링 결과 보여줘" / "폴링 결과 확인" / "미등록 버그 있어?" | `data/bugs/pending_bugs.json` 읽고 등록안 제시 |
 
 > **"FAIL 분석 결과 확인해줘"**는 pipeline의 fail_analysis를 의미한다 (기존 파이프라인).
@@ -114,9 +113,9 @@ python tools/poll_sheet.py --sheet 1MIPNna8-l4chjAtlSBEsYEn5kGqOaEjg7eBWBHtvHKc 
 | 파일 | 용도 |
 |------|------|
 | `tools/poll_sheet.py` | 폴링 스크립트 (`/init`에서 생성) |
-| `data/bugs/.poll_active` | 존재하면 폴링 활성화 |
-| `data/bugs/.poll_stop` | 존재하면 스크립트 종료 |
 | `data/bugs/pending_bugs.json` | 미등록 FAIL 분석 결과 (매 폴링 시 갱신) |
+
+> **ON/OFF 방식**: 일시정지 없음. "폴링 꺼줘" = 프로세스 완전 종료. "폴링 시작해" = 새 프로세스 실행.
 
 #### 동작 규칙
 
