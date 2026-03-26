@@ -61,76 +61,84 @@
 
 ### Step 1: 공통 설정 (`config/common.json`)
 
-대화형으로 아래 항목 수집:
+**한 항목씩 순차 질문** — 사용자가 대화창에 직접 값을 타이핑하면 즉시 반영한다.
+
+> **중요: 선택형 UI(라디오/체크박스) 사용 금지.** 모든 값 입력은 일반 대화 메시지로 받는다.
+> 사용자가 값을 타이핑할 수 있도록 자유 입력 형태로 질문한다.
+
+**질문 순서:**
 
 ```
-🔧 공통 환경 설정을 시작합니다.
+🔧 공통 환경 설정을 시작합니다. 항목별로 질문드리겠습니다.
 
-1. JIRA 설정
-   - JIRA URL: (예: https://your-domain.atlassian.net)
-   - JIRA 계정 이메일:
-
-2. Confluence 설정
-   - Confluence URL: (예: https://your-domain.atlassian.net/wiki)
-
-3. GitHub 설정
-   - Organization: (기본값: MediSolveAIDev)
-   - Actions Repo:
-
-4. Slack 알림 설정
-   - Webhook URL: (파이프라인 진행 알림용)
-     → 승인 전용 채널이 별도로 있으면 아래도 입력
-   - 승인 전용 Webhook URL: (선택, 승인 요청만 별도 채널로)
-
+① JIRA URL을 입력해주세요. (예: https://your-domain.atlassian.net)
+   → 스킵하려면 "스킵" 입력
+```
+→ 사용자 입력 대기 → 입력값 `config/common.json`에 반영 → 다음 질문:
+```
+② JIRA/Confluence 계정 이메일을 입력해주세요.
+   → 스킵하려면 "스킵" 입력
+```
+→ 사용자 입력 대기 → 반영 → 다음 질문:
+```
+③ Confluence URL을 입력해주세요. (예: https://your-domain.atlassian.net/wiki)
+   → ①에서 JIRA URL을 입력했으면 자동 추천: {JIRA_URL}/wiki
+   → 스킵하려면 "스킵" 입력
+```
+→ 이하 동일 패턴으로:
+```
+④ GitHub Organization (기본값: MediSolveAIDev, 엔터=기본값)
+⑤ GitHub Actions Repo (스킵 가능)
+⑥ Slack Webhook URL (파이프라인 알림용, 스킵 가능)
+⑦ 승인 전용 Slack Webhook URL (선택, 스킵 가능)
 ```
 
 **처리 규칙:**
-- 입력된 값은 프로젝트 루트의 `config/common.json`에 즉시 반영
-- 빈 값은 기존 값 유지 (엔터만 치면 스킵)
-- URL 형식 기본 검증 (https:// 시작 여부)
+- **한 번에 하나씩 질문**, 사용자 응답 후 다음 질문으로 진행
+- "스킵", "넘어가", "패스" → 해당 항목 건너뜀 (기존 값 유지)
+- 입력된 값은 `config/common.json`에 **즉시 반영** (질문 끝날 때까지 안 기다림)
+- URL 형식 기본 검증 (https:// 시작 여부) — 잘못되면 재질문
 - 다른 프로젝트에서 이미 설정한 common.json이 있으면 값을 복사할지 안내
 
 ### Step 2: 프로젝트 설정 (`config/project.json`)
 
-현재 프로젝트 루트의 `config/project.json`을 대화형으로 채운다.
+현재 프로젝트 루트의 `config/project.json`을 **한 항목씩 순차 질문**으로 채운다.
+
+> **중요: 선택형 UI 사용 금지.** 일반 대화 메시지로 값을 받는다.
+
+**질문 순서:**
 
 ```
-📁 현재 프로젝트 설정
+📁 프로젝트 설정을 시작합니다.
 
-1. 기본 정보
-   - 현재 버전: (기본값: v1.4.0)
-   - 플랫폼: (기본값: admin)
-
-2. JIRA
-   - 프로젝트 키: (예: CENSAY)
-   - 보드 ID: (숫자)
-
-3. Confluence
-   - Space Key: (예: SAY)
-   - 시나리오 페이지 ID:
-   - TC 페이지 ID:
-   - 리포트 페이지 ID:
-
-4. Figma
-   - File ID: (Figma URL에서 추출 가능)
-     → URL 붙여넣으면 자동 추출: https://figma.com/file/{FILE_ID}/...
-
-5. 자동화
-   - 테스트 레포: (예: MediSolveAIDev/say-e2e-tests)
-   - 스크립트 경로: (예: tests/)
-   - 테스트 환경 URL: (예: https://dev-say.example.com)
-   - 프레임워크: (기본값: pytest)
+① 현재 버전을 입력해주세요. (예: v1.4.0, 스킵 가능)
+② 플랫폼을 입력해주세요. (예: admin, 스킵 가능)
+③ JIRA 프로젝트 키를 입력해주세요. (예: CENSAY)
+④ JIRA 보드 ID를 입력해주세요. (숫자, 스킵 가능)
+⑤ Confluence Space Key를 입력해주세요. (예: SAY)
+⑥ Confluence 시나리오 페이지 ID를 입력해주세요. (URL 붙여넣기 가능)
+⑦ Confluence TC 페이지 ID를 입력해주세요. (URL 붙여넣기 가능)
+⑧ Confluence 리포트 페이지 ID를 입력해주세요. (URL 붙여넣기 가능)
+⑨ Figma File ID를 입력해주세요. (URL 붙여넣기 가능)
+⑩ 테스트 레포를 입력해주세요. (예: MediSolveAIDev/say-e2e-tests, 스킵 가능)
+⑪ 테스트 환경 URL을 입력해주세요. (스킵 가능)
 ```
 
 **처리 규칙:**
+- **한 번에 하나씩 질문**, 사용자 응답 후 다음 질문
+- "스킵", "넘어가", "패스" → 해당 항목 건너뜀
 - Figma URL 붙여넣기 시 File ID 자동 추출
 - Confluence URL 붙여넣기 시 Page ID 자동 추출
-- 숫자 필드 형식 검증
+- 숫자 필드 형식 검증 — 잘못되면 재질문
 
 ### Step 3: API 키 확인 (`.env`)
 
+먼저 현재 상태를 보여주고, **미설정 항목만 한 항목씩 질문**한다.
+
+> **중요: 선택형 UI 사용 금지.** 일반 대화 메시지로 값을 받는다.
+
 ```
-🔑 API 키 설정을 확인합니다.
+🔑 API 키 상태를 확인합니다.
 
 .env 파일 상태:
   ✅ CONFLUENCE_URL = https://xxx.atlassian.net
@@ -139,14 +147,21 @@
   ❌ FIGMA_ACCESS_TOKEN = (미설정)
   ❌ JIRA_API_TOKEN = (미설정)
 
-미설정 항목이 3개 있습니다.
-지금 입력하시겠습니까? (Y/N)
+미설정 항목 3개를 순서대로 질문드리겠습니다.
 ```
+→ 미설정 항목만 순차 질문:
+```
+① CONFLUENCE_API_TOKEN을 입력해주세요.
+   ⚠️ 화면에 노출됩니다. 주변 확인 후 입력해주세요.
+   → 스킵하려면 "스킵" 입력
+```
+→ 사용자 입력 → `.env`에 즉시 반영 → 다음 미설정 항목 질문
 
 **처리 규칙:**
-- `.env` 파일이 없으면 새로 생성하고 대화형으로 값을 입력받는다
-- `.env`가 이미 있으면 빈 값만 표시하고 해당 항목만 입력받는다
-- API 토큰 입력 시 마스킹 안내 (화면에 노출되므로 주의)
+- `.env` 파일이 없으면 새로 생성
+- **이미 값이 있는 항목은 질문하지 않음** (미설정만 질문)
+- "스킵", "넘어가", "패스" → 해당 항목 건너뜀
+- Step 1에서 이미 입력한 값(JIRA URL, 이메일)은 `.env`에도 자동 반영 (CONFLUENCE_URL, CONFLUENCE_EMAIL)
 - `.env`는 `.gitignore`에 포함 확인
 
 ### Step 3-1: Google Sheets 인증 파일 확인
@@ -220,8 +235,11 @@ JIRA 버그 관리(/report-bug) 및 Confluence 연동에 필요합니다.
 
 **처리 규칙:**
 - `~/.claude/.mcp.json`에 `atlassian` 키가 있는지 파일 읽기로 확인
-- 있으면 ✅ 표시
-- 없으면 설정 가이드 출력 후 스킵 가능 (다음 단계로 진행)
+- **있으면** → ✅ 표시, 추가 입력 없이 다음 단계로 진행
+- **없으면** → Step 1/3에서 이미 입력받은 값(JIRA URL, 이메일, JIRA_API_TOKEN)으로 `.mcp.json`에 `atlassian` 항목 자동 추가
+  - Step 1/3에서 해당 값을 스킵했으면 → 그때만 개별 질문 (일반 대화 형태)
+  - `.mcp.json`의 기존 다른 MCP 서버 설정은 건드리지 않음 (`atlassian` 키만 추가)
+- 자동 추가 후 "Claude Code를 재시작해야 적용됩니다." 안내
 - Atlassian MCP 없어도 나머지 스킬은 정상 동작 (report-bug만 비활성)
 
 ### Step 3-3: Figma Export 환경 확인
