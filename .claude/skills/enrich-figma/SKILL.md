@@ -1,7 +1,7 @@
 ---
 name: enrich-figma
-description: Figma export(디자인 이미지 + 텍스트)를 기반으로 기존 시나리오를 보강합니다. figma_output 폴더 경로 또는 프로젝트명을 전달하세요.
-argument-hint: [figma_output 폴더 경로 또는 프로젝트명_버전]
+description: Figma export(디자인 이미지 + 텍스트)를 기반으로 기존 시나리오를 보강합니다. data/figma_output 폴더 경로 또는 프로젝트명을 전달하세요.
+argument-hint: [data/figma_output 폴더 경로 또는 프로젝트명_버전]
 ---
 
 # Figma 기반 시나리오 보강
@@ -16,13 +16,13 @@ Figma에서 export된 디자인 이미지(PNG)와 설명 텍스트(descriptions.
 기존 시나리오에 누락된 UI 요소, 문구, 상태별 화면을 보강하는 스킬이다.
 
 ### 입력 방식
-1. **figma_output 폴더 경로**: `figma_output/say_admin_1.3.0`
-2. **프로젝트명_버전**: `say_admin_1.3.0` → `figma_output/say_admin_1.3.0/` 자동 탐색
-3. **프로젝트명만**: `SAY` → `figma_output/` 하위에서 최신 폴더 자동 탐색
+1. **figma_output 폴더 경로**: `data/figma_output/say_admin_1.3.0`
+2. **프로젝트명_버전**: `say_admin_1.3.0` → `data/figma_output/say_admin_1.3.0/` 자동 탐색
+3. **프로젝트명만**: `SAY` → `data/figma_output/` 하위에서 최신 폴더 자동 탐색
 
 ### 필수 파일 구조
 ```
-figma_output/{프로젝트}_{버전}/
+data/figma_output/{프로젝트}_{버전}/
 ├── summary.json          ← 섹션별 디자인/설명 매핑 (필수)
 ├── descriptions.txt      ← 전체 텍스트 설명 (필수)
 └── *.png                 ← 디자인 이미지 파일들
@@ -46,7 +46,7 @@ figma_output/{프로젝트}_{버전}/
 Figma export를 먼저 실행해주세요:
   python tools/figma_extract.py
 
-또는 figma_output/{프로젝트}_{버전}/ 폴더에 다음 파일이 필요합니다:
+또는 data/figma_output/{프로젝트}_{버전}/ 폴더에 다음 파일이 필요합니다:
   - summary.json (섹션별 디자인/설명 매핑)
   - descriptions.txt (텍스트 설명)
   - *.png (디자인 이미지)

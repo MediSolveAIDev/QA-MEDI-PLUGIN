@@ -244,8 +244,8 @@ qa_agent/
 │   ├── rules/                           ← Rule Learner (신규)
 │   ├── test_results/                    ← GitHub Actions (외부)
 │   └── pipeline/                        ← Orchestrator (신규)
-├── figma_output/                      ← Figma export 데이터 (enrich-figma 스킬 참조)
-│   └── {프로젝트}_{버전}/               ← summary.json + descriptions.txt + *.png
+│   ├── figma_output/                   ← Figma export 데이터 (enrich-figma 스킬 참조)
+│   │   └── {프로젝트}_{버전}/           ← summary.json + descriptions.txt + *.png
 ├── tools/                             ← 유틸리티 스크립트
 │   └── figma_extract.py                 ← Figma 데이터 추출 스크립트
 ├── docs/                              ← 설계 문서

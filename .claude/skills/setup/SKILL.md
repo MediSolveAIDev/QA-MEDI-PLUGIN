@@ -229,35 +229,35 @@ JIRA 버그 관리(/report-bug) 및 Confluence 연동에 필요합니다.
 ```
 🎨 Figma Export 환경을 확인합니다.
 
-figma_output/ 폴더 상태:
-  ✅ figma_output/ 폴더 존재
+data/figma_output/ 폴더 상태:
+  ✅ data/figma_output/ 폴더 존재
 
 tools/ 폴더 상태:
   ✅ tools/figma_extract.py 존재
-  ❌ tools/figma_extract.py 없음
+  ✅ tools/figma_bridge.py 존재
+  ✅ tools/figma_cmd.py 존재
 ```
 
 **처리 규칙:**
-- `figma_output/` 폴더 존재 여부 확인 → 없으면 `/init`에서 생성되었는지 확인
-- `tools/figma_extract.py` 존재 여부 확인
+- `data/figma_output/` 폴더 존재 여부 확인
+- `tools/figma_extract.py`, `tools/figma_bridge.py`, `tools/figma_cmd.py` 존재 여부 확인
+- 이 파일들은 `/init` 실행 시 자동 생성됨
 - 파일이 없으면 아래 안내 출력:
   ```
-  ⚠️ tools/figma_extract.py 파일이 없습니다.
-
-  Figma 보강 단계(Phase 1-A)에서 Figma export 데이터가 필요합니다.
-  figma_extract.py를 tools/ 폴더에 배치해주세요.
-
-  📂 위치: QA_업무자료 > 1.QA 공유 자료 > 자동화 > 공통 환경변수 > 00.QA-agent 세팅용
+  ⚠️ Figma 도구 파일이 없습니다. /init 을 먼저 실행해주세요.
   ```
 - 파일 있으면 ✅ 표시 + 사용법 안내:
   ```
   💡 Figma export 실행 방법:
-    python tools/figma_extract.py --project SAY --version v1.4.0
+    1. python tools/figma_bridge.py          (브릿지 서버 실행, 별도 터미널)
+    2. Figma에서 Claude Connector 플러그인 실행
+    3. python tools/figma_extract.py --project SAY --version v1.4.0 --sections sections.json
 
-  export 결과는 figma_output/{프로젝트}_{버전}/ 에 저장됩니다.
+  섹션 ID 확인: python tools/figma_cmd.py selection (Figma에서 노드 선택 후)
+  export 결과는 data/figma_output/{프로젝트}_{버전}/ 에 저장됩니다.
   이후 /enrich-figma 스킬로 시나리오 보강이 가능합니다.
   ```
-- figma_extract.py 없어도 다음 단계로 진행 가능 (Figma 보강만 비활성)
+- Figma 도구 없어도 다음 단계로 진행 가능 (Figma 보강만 비활성)
 
 ### Step 4: 연결 테스트 (선택)
 
@@ -295,7 +295,7 @@ tools/ 폴더 상태:
 API 키: .env ⚠️ (FIGMA_ACCESS_TOKEN 미설정)
 Slack 알림: ✅ 설정됨 / ❌ 미설정 (파이프라인 알림 비활성)
 Atlassian MCP: ✅ 연결됨 / ❌ 미설정 (JIRA 버그 관리 비활성)
-Figma Export: tools/figma_extract.py ✅ / figma_output/ ✅
+Figma Export: tools/figma_extract.py ✅ / data/figma_output/ ✅
 
 💡 나중에 변경하려면: /setup update
 💡 상태 확인하려면: /setup check
@@ -319,7 +319,7 @@ Figma Export: tools/figma_extract.py ✅ / figma_output/ ✅
   • data/scenarios/  → 시나리오
   • data/tc/         → TC
   • data/pipeline/   → 파이프라인 상태
-  • figma_output/    → Figma export 데이터
+  • data/figma_output/    → Figma export 데이터
 
 🎨 Figma 보강:
   • python tools/figma_extract.py --project SAY --version v1.4.0  → Figma 데이터 추출

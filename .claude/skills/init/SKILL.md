@@ -36,10 +36,13 @@
 │   ├── bugs/
 │   ├── rules/
 │   ├── test_results/
-│   └── pipeline/
-├── figma_output/              ← Figma export 데이터 저장 (enrich-figma 스킬 참조)
+│   ├── pipeline/
+│   └── figma_output/          ← Figma export 데이터 저장 (enrich-figma 스킬 참조)
 ├── tools/                     ← 유틸리티 스크립트
-│   └── poll_sheet.py          ← 구글 시트 FAIL 폴링 스크립트 (report-bug 스킬 연동)
+│   ├── poll_sheet.py          ← 구글 시트 FAIL 폴링 스크립트 (report-bug 스킬 연동)
+│   ├── figma_extract.py       ← Figma 섹션 이미지/텍스트 추출 (enrich-figma 스킬 연동)
+│   ├── figma_bridge.py        ← Figma WebSocket 브릿지 서버 (figma_extract.py 의존)
+│   └── figma_cmd.py           ← Figma 브릿지 CLI 클라이언트 (디버깅/수동 조회용)
 ├── templates/
 └── tests/
 ```
@@ -435,7 +438,533 @@ if __name__ == '__main__':
 
 > `/init` 실행 시 위 스크립트를 `tools/poll_sheet.py`에 생성한다. 이미 존재하면 건너뛴다.
 
-### 4.8 .gitignore (없을 때만 생성)
+### 4.8 tools/figma_extract.py (없을 때만 생성)
+
+Figma 섹션에서 디자인 이미지(PNG)와 디스크립션 텍스트를 추출하는 스크립트.
+enrich-figma 스킬의 입력 데이터를 생성한다.
+
+**핵심 기능:**
+- figma_bridge.py WebSocket 서버를 통해 Figma 플러그인과 통신
+- 지정된 섹션 목록에서 디자인 이미지를 PNG로 export
+- Description 프레임의 텍스트를 자동 추출
+- summary.json + descriptions.txt + PNG 파일을 data/figma_output/ 에 저장
+
+**실행:**
+```bash
+# 1. 먼저 figma_bridge.py 서버 실행 (별도 터미널)
+python tools/figma_bridge.py
+
+# 2. Figma에서 Claude Connector 플러그인 실행 (브릿지 연결)
+
+# 3. 섹션 추출 실행
+python tools/figma_extract.py --project SAY --version v1.4.0 --sections sections.json
+```
+
+**의존성:** `websockets`
+
+**스크립트 스펙:**
+
+```python
+"""
+Figma Section Extractor (via WebSocket Bridge)
+- 섹션 목록에서 디자인 이미지 + 디스크립션 텍스트 자동 추출
+- figma_bridge.py 서버 + Claude Connector 플러그인 필요
+
+Usage:
+    python tools/figma_extract.py --project PROJECT --version VERSION [--sections SECTIONS_JSON]
+
+sections.json 예시:
+[
+  {"id": "12883:20126", "name": "예외 케이스"},
+  {"id": "12883:18684", "name": "AI 가이드 등록"}
+]
+
+섹션 ID는 Figma에서 노드를 선택 후 figma_cmd.py selection 으로 확인 가능.
+"""
+
+import asyncio
+import json
+import sys
+import os
+import base64
+import re
+import argparse
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
+try:
+    import websockets
+except ImportError:
+    import subprocess
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "websockets", "-q"])
+    import websockets
+
+WS_URL = "ws://localhost:3055"
+
+
+def sanitize(name):
+    name = re.sub(r'[<>:"/\\|?*]', '_', name)
+    return name.strip()[:100]
+
+
+async def send_command(action, params=None, timeout=60):
+    msg = {
+        "type": "cli",
+        "action": action,
+        "params": params or {},
+        "timeout": timeout,
+    }
+    async with websockets.connect(WS_URL) as ws:
+        await ws.send(json.dumps(msg))
+        result = await asyncio.wait_for(ws.recv(), timeout=timeout + 10)
+        return json.loads(result)
+
+
+async def get_children(section_id):
+    result = await send_command("getNodeDetails", {"nodeId": section_id})
+    if "error" in result:
+        raise Exception(result["error"])
+    return result["result"].get("children", [])
+
+
+async def get_text_content(node_id):
+    """Description 프레임의 텍스트 노드에서 characters 추출"""
+    result = await send_command("getNodeDetails", {"nodeId": node_id})
+    if "error" in result:
+        return ""
+    node = result["result"]
+    texts = []
+    if node.get("characters"):
+        texts.append(node["characters"])
+    for child in node.get("children", []):
+        if child.get("type") == "TEXT":
+            child_name = child.get("name", "")
+            if child_name:
+                texts.append(child_name)
+            else:
+                try:
+                    detail = await send_command("getNodeDetails", {"nodeId": child["id"]})
+                    if "error" not in detail and detail["result"].get("characters"):
+                        texts.append(detail["result"]["characters"])
+                except Exception:
+                    pass
+    return "\n\n".join(texts)
+
+
+async def export_image(node_id, filepath):
+    """노드를 PNG로 내보내기"""
+    result = await send_command("exportNode", {"nodeId": node_id, "format": "PNG", "scale": 2}, timeout=120)
+    if "error" in result:
+        print(f"  [X] export 실패: {result['error']}")
+        return False
+    b64 = result.get("result", {}).get("base64") or result.get("result", {}).get("data")
+    if not b64:
+        print(f"  [X] 이미지 데이터 없음")
+        return False
+    img = base64.b64decode(b64)
+    with open(filepath, "wb") as f:
+        f.write(img)
+    size_kb = len(img) / 1024
+    print(f"  [OK] {os.path.basename(filepath)} ({size_kb:.0f}KB)")
+    return True
+
+
+async def process_section(section, output_dir):
+    """하나의 섹션 처리: 디자인 이미지 + 디스크립션 텍스트"""
+    section_id = section["id"]
+    section_name = section["name"]
+    safe_name = sanitize(section_name)
+
+    print(f"\n{'='*60}")
+    print(f"[섹션] {section_name} (id: {section_id})")
+    print(f"{'='*60}")
+
+    children = await get_children(section_id)
+    if not children:
+        print("  하위 프레임 없음")
+        return {"name": section_name, "designs": [], "descriptions": []}
+
+    designs = []
+    descriptions = []
+
+    for child in children:
+        name = child.get("name", "")
+        child_id = child["id"]
+        is_desc = "description" in name.lower()
+
+        if is_desc:
+            print(f"  [텍스트] {name}")
+            text = await get_text_content(child_id)
+            if text:
+                descriptions.append({"name": name, "id": child_id, "text": text})
+                print(f"    -> {len(text)}자")
+            else:
+                print(f"    -> 텍스트 없음")
+        else:
+            print(f"  [이미지] {name}")
+            fname = f"{safe_name}_{sanitize(name)}.png"
+            fpath = os.path.join(output_dir, fname)
+            ok = await export_image(child_id, fpath)
+            if ok:
+                designs.append({"name": name, "id": child_id, "file": fname})
+
+    return {"name": section_name, "id": section_id, "designs": designs, "descriptions": descriptions}
+
+
+async def main():
+    parser = argparse.ArgumentParser(description='Figma Section Extractor')
+    parser.add_argument('--project', required=True, help='프로젝트명 (예: SAY)')
+    parser.add_argument('--version', required=True, help='버전 (예: v1.4.0)')
+    parser.add_argument('--sections', help='섹션 목록 JSON 파일 경로')
+    args = parser.parse_args()
+
+    # 섹션 목록 로드
+    if args.sections:
+        with open(args.sections, encoding='utf-8') as f:
+            sections = json.load(f)
+    else:
+        print("[안내] --sections 파일이 지정되지 않았습니다.")
+        print("  섹션 ID 확인 방법:")
+        print("    1. python tools/figma_bridge.py  (브릿지 서버 실행)")
+        print("    2. Figma에서 추출할 섹션 선택")
+        print("    3. python tools/figma_cmd.py selection  (선택 노드 ID 확인)")
+        print()
+        print("  sections.json 예시:")
+        print('  [{"id": "12883:20126", "name": "예외 케이스"}]')
+        return
+
+    project_lower = args.project.lower()
+    version = args.version.replace('.', '.')
+    output_dir = f"data/figma_output/{project_lower}_{version}"
+    os.makedirs(output_dir, exist_ok=True)
+
+    print(f"[시작] {args.project} {args.version} - {len(sections)}개 섹션 추출")
+    print(f"[출력] {output_dir}/\n")
+
+    all_results = []
+    all_descriptions = []
+
+    for section in sections:
+        try:
+            result = await process_section(section, output_dir)
+            all_results.append(result)
+            all_descriptions.extend(result.get("descriptions", []))
+        except Exception as e:
+            print(f"  [X] 오류: {e}")
+            all_results.append({"name": section["name"], "error": str(e)})
+
+    # 디스크립션 전체 텍스트 파일 저장
+    if all_descriptions:
+        txt_path = os.path.join(output_dir, "descriptions.txt")
+        with open(txt_path, "w", encoding="utf-8") as f:
+            for desc in all_descriptions:
+                f.write(f"{'='*60}\n")
+                f.write(f"[{desc['name']}]\n")
+                f.write(f"Node ID: {desc['id']}\n")
+                f.write(f"{'='*60}\n\n")
+                f.write(desc["text"])
+                f.write("\n\n\n")
+        print(f"\n[저장] 디스크립션 전체: {txt_path}")
+
+    # 요약 JSON 저장
+    summary_path = os.path.join(output_dir, "summary.json")
+    with open(summary_path, "w", encoding="utf-8") as f:
+        json.dump(all_results, f, ensure_ascii=False, indent=2)
+    print(f"[저장] 요약: {summary_path}")
+
+    # 통계
+    total_images = sum(len(r.get("designs", [])) for r in all_results)
+    total_descs = sum(len(r.get("descriptions", [])) for r in all_results)
+    print(f"\n[완료] 이미지 {total_images}개, 디스크립션 {total_descs}개 추출")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+> `/init` 실행 시 위 스크립트를 `tools/figma_extract.py`에 생성한다. 이미 존재하면 건너뛴다.
+
+### 4.9 tools/figma_bridge.py (없을 때만 생성)
+
+Figma WebSocket 브릿지 서버. figma_extract.py가 Figma 플러그인과 통신하기 위해 필요한 중계 서버.
+
+**핵심 기능:**
+- localhost:3055에서 WebSocket 서버 실행
+- Figma Claude Connector 플러그인과 CLI 클라이언트를 중계
+- 플러그인: 연결 후 대기 (서버가 명령 push)
+- CLI: 연결 즉시 명령 전송, 응답 수신
+
+**실행:**
+```bash
+python tools/figma_bridge.py
+# → [서버] ws://localhost:3055 시작
+# → Figma 플러그인 연결 대기 중...
+```
+
+**의존성:** `websockets`
+
+**스크립트 스펙:**
+
+```python
+"""
+Figma Bridge Server
+- WebSocket 서버 (localhost:3055)
+- 포트 하나에 플러그인 + CLI 클라이언트 모두 처리
+- 플러그인: 연결 후 메시지 없이 대기 (서버가 명령 push)
+- CLI: 연결 즉시 {"type":"cli",...} 전송
+"""
+
+import asyncio
+import json
+import sys
+import os
+import uuid
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
+try:
+    import websockets
+except ImportError:
+    import subprocess
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "websockets", "-q"])
+    import websockets
+
+plugin_ws = None
+pending = {}  # {req_id: asyncio.Future}
+
+
+async def handle_connection(websocket):
+    global plugin_ws
+
+    try:
+        first_msg = await asyncio.wait_for(websocket.recv(), timeout=1.0)
+        data = json.loads(first_msg)
+        if data.get("type") == "cli":
+            await handle_cli(websocket, data)
+            return
+        req_id = data.get("id")
+        if req_id and req_id in pending:
+            pending[req_id].set_result(data)
+    except asyncio.TimeoutError:
+        pass
+    except Exception:
+        return
+
+    plugin_ws = websocket
+    print("[OK] Figma 플러그인 연결됨")
+    try:
+        async for message in websocket:
+            try:
+                resp = json.loads(message)
+                req_id = resp.get("replyId") or resp.get("id")
+                if req_id and req_id in pending:
+                    pending[req_id].set_result(resp)
+            except json.JSONDecodeError:
+                pass
+    except websockets.exceptions.ConnectionClosed:
+        pass
+    finally:
+        if plugin_ws is websocket:
+            plugin_ws = None
+            print("[--] Figma 플러그인 연결 끊김")
+
+
+async def handle_cli(websocket, data):
+    """CLI 명령 처리: 플러그인에 전달 후 응답 반환"""
+    action = data.get("action")
+    params = data.get("params", {})
+    timeout = data.get("timeout", 30)
+
+    if not plugin_ws:
+        await websocket.send(json.dumps({"error": "Figma 플러그인 미연결"}))
+        return
+
+    req_id = str(uuid.uuid4())[:8]
+    msg = {"action": action, "params": params, "replyId": req_id}
+
+    future = asyncio.get_event_loop().create_future()
+    pending[req_id] = future
+
+    await plugin_ws.send(json.dumps(msg))
+
+    try:
+        result = await asyncio.wait_for(future, timeout=timeout)
+        await websocket.send(json.dumps(result, ensure_ascii=False))
+    except asyncio.TimeoutError:
+        await websocket.send(json.dumps({"error": f"timeout ({timeout}s)"}))
+    finally:
+        pending.pop(req_id, None)
+
+
+async def main():
+    print("[서버] ws://localhost:3055 시작")
+    print("[대기] Figma 플러그인 연결 대기 중...")
+
+    async with websockets.serve(handle_connection, "localhost", 3055):
+        await asyncio.Future()
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n[종료]")
+```
+
+> `/init` 실행 시 위 스크립트를 `tools/figma_bridge.py`에 생성한다. 이미 존재하면 건너뛴다.
+
+### 4.10 tools/figma_cmd.py (없을 때만 생성)
+
+Figma 브릿지 CLI 클라이언트. 디버깅 및 섹션 ID 확인용.
+
+**핵심 기능:**
+- figma_bridge.py 서버에 명령 전송
+- 노드 정보 조회, 텍스트 검색, 이미지 내보내기
+- 현재 Figma 선택 노드 ID 확인 (섹션 목록 작성에 활용)
+
+**실행:**
+```bash
+python tools/figma_cmd.py selection          # 현재 선택 노드 ID 확인
+python tools/figma_cmd.py nodes <node-id>    # 노드 상세 정보
+python tools/figma_cmd.py children <node-id> # 하위 노드 목록
+python tools/figma_cmd.py pages              # 페이지 목록
+```
+
+**의존성:** `websockets`
+
+**스크립트 스펙:**
+
+```python
+"""
+Figma Bridge CLI Client
+- figma_bridge.py 서버에 명령 전송
+- 사용법: python figma_cmd.py <action> [params_json]
+"""
+
+import asyncio
+import json
+import sys
+import os
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
+try:
+    import websockets
+except ImportError:
+    import subprocess
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "websockets", "-q"])
+    import websockets
+
+WS_URL = "ws://localhost:3055"
+
+
+async def send_command(action, params=None, timeout=30):
+    """서버에 명령 전송 후 결과 반환"""
+    msg = {
+        "type": "cli",
+        "action": action,
+        "params": params or {},
+        "timeout": timeout,
+    }
+    async with websockets.connect(WS_URL) as ws:
+        await ws.send(json.dumps(msg))
+        result = await asyncio.wait_for(ws.recv(), timeout=timeout + 5)
+        return json.loads(result)
+
+
+def print_usage():
+    print("사용법: python figma_cmd.py <command> [args]")
+    print()
+    print("명령:")
+    print("  nodes <node-id>          노드 상세 정보")
+    print("  children <node-id>       하위 노드 (depth=2)")
+    print("  text <node-id>           텍스트 노드 검색")
+    print("  find <name>              이름으로 검색")
+    print("  export <node-id> [dir]   이미지 내보내기")
+    print("  pages                    페이지 목록")
+    print("  selection                현재 선택")
+    print("  scroll <node-id>         해당 노드로 이동")
+    print("  action <name> <json>     원시 액션")
+
+
+async def main():
+    if len(sys.argv) < 2:
+        print_usage()
+        return
+
+    cmd = sys.argv[1]
+    arg = sys.argv[2] if len(sys.argv) > 2 else ""
+    arg2 = sys.argv[3] if len(sys.argv) > 3 else ""
+
+    try:
+        if cmd == "nodes":
+            result = await send_command("getNodeDetails", {"nodeId": arg})
+        elif cmd == "children":
+            result = await send_command("getNodeDetails", {"nodeId": arg, "depth": 2})
+        elif cmd == "text":
+            result = await send_command("findTextNodes", {"nodeId": arg})
+        elif cmd == "find":
+            result = await send_command("findNodes", {"query": arg})
+        elif cmd == "export":
+            result = await send_command("exportNode", {"nodeId": arg, "format": "PNG", "scale": 2}, timeout=60)
+            if result.get("result") and not result.get("error"):
+                out_dir = arg2 or "data/figma_output"
+                os.makedirs(out_dir, exist_ok=True)
+                res = result["result"]
+                if isinstance(res, dict) and res.get("data"):
+                    import base64
+                    name = res.get("name", arg.replace(":", "-"))
+                    path = os.path.join(out_dir, f"{name}.png")
+                    with open(path, "wb") as f:
+                        f.write(base64.b64decode(res["data"]))
+                    print(f"[저장] {path}")
+                    return
+        elif cmd == "pages":
+            result = await send_command("getPages", {})
+        elif cmd == "selection":
+            result = await send_command("getSelection", {})
+        elif cmd == "scroll":
+            result = await send_command("scrollIntoView", {"nodeId": arg})
+        elif cmd == "action":
+            params = json.loads(arg2) if arg2 else {}
+            result = await send_command(arg, params)
+        else:
+            print(f"알 수 없는 명령: {cmd}")
+            print_usage()
+            return
+
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+
+    except ConnectionRefusedError:
+        print("[X] 서버 연결 실패 - figma_bridge.py가 실행 중인지 확인하세요")
+    except asyncio.TimeoutError:
+        print("[X] 타임아웃")
+    except Exception as e:
+        print(f"[X] 오류: {e}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+> `/init` 실행 시 위 스크립트를 `tools/figma_cmd.py`에 생성한다. 이미 존재하면 건너뛴다.
+
+### 4.11 .gitignore (없을 때만 생성)
 
 ```
 .env
