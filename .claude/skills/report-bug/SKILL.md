@@ -888,6 +888,8 @@ JQL 조회 → changelog 수집 → QA 분석 → JSON + HTML 보고서 출력
 - 스크린샷 있으면 `attachments`에 경로 포함
 - Phase A에서 JIRA 후보 검색은 **최대 50건**으로 제한 (API 부하 방지)
 - changelog 파싱 시 리오픈 횟수 0이면 `reopen_history` 필드 생략
+- Phase A 산출물은 Phase B 실행 전 반드시 `/review-bug` 검증을 통과해야 함
+- review-bug FAIL 시 피드백을 반영하여 해당 버그만 수정 (전체 재생성 아님, 최대 3회)
 - Phase B 실행 전 반드시 Orchestrator의 실행 지시서가 있어야 함 (직접 실행 금지)
 - 실행 실패 시 에러를 `execute_result`에 기록하고 Orchestrator에 보고 (재시도 안 함)
 - `/analyze-fail`에서 자동 호출 시 TC 행 번호 자동 매핑

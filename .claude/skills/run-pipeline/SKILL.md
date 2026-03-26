@@ -12,6 +12,14 @@
 > - "진행 상황", "어디까지 했어", "상태 알려줘", "지금 뭐 하고 있어"
 > - "시나리오 확정", "시나리오 승인" → 현재 Phase 확인 → 해당 승인 처리 + 다음 Phase 자동 진행
 > - "TC 확정", "TC 승인" → 현재 Phase 확인 → 해당 승인 처리 + 다음 Phase 자동 진행
+> - "버그 등록해", "버그 등록 시작", "이슈 등록해" → Phase Bug 시작
+> - "시트 폴링하고 버그 등록해줘", "FAIL 있는 거 등록해" → Phase Bug (폴링 모드)
+> - "폴링 시작해", "시트 감시 켜줘" → Phase Bug 폴링 ON
+> - "폴링 꺼줘", "폴링 멈춰", "폴링 종료해" → Phase Bug 폴링 OFF
+> - "폴링 결과 보여줘", "미등록 버그 있어?" → Phase Bug 폴링 결과 확인
+> - "버그 등록 승인", "이슈 등록 확정" → Phase Bug 승인 처리
+> - "버그 현황 정리해줘", "버그 리포트 뽑아줘" → report-bug Mode 2 (현황 조회)
+> - "CENSAY-234 리오픈해", "티켓 상태 변경해" → report-bug Mode 3 (티켓 관리)
 >
 > **중요**: 위 패턴 감지 시 사용자에게 "어떤 작업을 할까요?" 같은 선택지를 제시하지 않는다. 부족한 정보만 질문한 뒤 바로 파이프라인을 실행한다.
 
@@ -150,11 +158,13 @@ python -m orchestrator.cli_state list
 5. 테스트 결과 확인 후:
    - **★ 승인 5 (자동)**: FAIL 없으면 자동 통과 → 7단계로
    - FAIL 있으면: 6단계로
-6. **FAIL 처리 (analyze-fail → report-bug 2-Phase 플로우)**:
+6. **FAIL 처리 (analyze-fail → report-bug → review-bug 플로우)**:
    - ① Skill `/analyze-fail` 호출 → Fail 분류 (코드 이슈/실제 버그/환경 이슈/TC 오류)
    - ② 실제 버그 있으면:
      - Skill `/report-bug` Phase A 호출 (수집 모드: JIRA 후보 검색 + 이력 수집)
-     - Orchestrator가 보고서 분석 → 중복/리오픈/신규 추천안 작성
+     - Skill `/review-bug` 호출 (정합성 검증: 필드 완성도, 심각도 정합성, 중복 판단)
+     - 리뷰 FAIL 시 → report-bug 재작업 → review-bug 재검증 (최대 3회)
+     - 리뷰 PASS 후 → Orchestrator가 보고서 분석 → 중복/리오픈/신규 추천안 작성
      - 사용자에게 요약 + 추천안 제시 → **사용자 선별 대기**
      - 사용자 방향 제시 후 → 실행 지시서 생성
      - Skill `/report-bug` Phase B 호출 (실행 모드: JIRA 생성/리오픈/수정/링크)
@@ -163,6 +173,73 @@ python -m orchestrator.cli_state list
    - ④ 환경 이슈: 사용자에게 재실행 또는 무시 결정 요청
    - ⑤ TC 오류: TC 수정 필요 건 목록 → 사용자 확인 후 `/write-tc` 재작업
 7. `update {ID} phase "4"` → Phase 4 시작
+
+### Phase Bug: 독립 버그 등록 (파이프라인 외)
+
+> 팀장이 "버그 등록해", "시트 폴링하고 버그 등록해줘" 등으로 직접 요청 시 실행.
+> Phase 3의 FAIL 처리와 달리, **시나리오/TC 파이프라인 없이 독립 실행**된다.
+
+1. **정보 수집** — 부족한 정보만 질문
+   - 프로젝트, 버전: `config/project.json`에서 자동 참조 → 없으면 질문
+   - 시트 ID, 탭명: 폴링 모드일 때만 필요 → 없으면 질문
+   - 수동 등록 시: 대화형으로 버그 정보 수집 (report-bug 3.1 수동 입력 템플릿)
+2. **폴링 모드 시**:
+   - `python tools/poll_sheet.py --sheet {SHEET_ID} --tab {TAB_NAME} --interval 600` 백그라운드 실행
+   - `update {ID} phase "bug"`, `update {ID} status "polling"`
+   - FAIL 감지 대기 → `data/bugs/pending_bugs.json` 갱신 감지
+   - 감지 즉시 → 3단계로 자동 진행
+3. **report-bug Phase A 호출** (수집 + 분석)
+   - `pending_bugs.json` 또는 수동 입력 기반
+   - Skill `/report-bug collect {PROJECT} {VERSION}` 호출
+   - 산출물: `data/bugs/{PROJECT}_{version}_{feature}_bug.json`
+4. **review-bug 호출** (정합성 검증)
+   - Skill `/review-bug` 호출 (bug JSON 전달)
+   - **FAIL** → report-bug에 피드백 전달 → 재작업 → 재검증 (최대 3회)
+   - **3회 초과** → 사용자에게 에스컬레이션 보고
+   - **PASS** → 5단계로
+5. **등록안 제시 → ★ 승인 7 (수동)**
+   - Orchestrator가 추천안 작성 (신규/리오픈/스킵 + 심각도 + 담당자 질문)
+   - 사용자에게 요약 + 추천안 제시 → 선별 + 담당자 지정 대기
+   - 예: "1, 3번 등록해. 1번 담당자 홍길동, 3번 김개발"
+6. **report-bug Phase B 호출** (실행)
+   - 사용자 선별 기반 실행 지시서 생성
+   - Skill `/report-bug execute {PROJECT} {VERSION}` 호출
+   - JIRA 티켓 생성/리오픈 + Google Sheet BTS ID 매핑
+7. **실행 결과 보고**
+   - 등록/리오픈된 티켓 키 목록 요약
+   - `update {ID} status "bug_completed"`
+8. **폴링 후속 처리**
+   - 추가 FAIL 감지 시 → 3단계부터 반복
+   - 추가 FAIL 없음 + 사용자 "폴링 꺼줘" → 폴링 프로세스 종료 (`kill`)
+   - 사용자가 명시적으로 종료하지 않으면 폴링은 계속 유지
+
+**폴링 제어 명령 (Phase Bug 진행 중):**
+
+| 사용자 발화 | Orchestrator 동작 |
+|------------|-------------------|
+| "폴링 시작해" | `poll_sheet.py` 백그라운드 실행, `status: "polling"` |
+| "폴링 꺼줘" / "폴링 종료해" | 프로세스 kill, `status: "poll_stopped"` |
+| "폴링 상태" | 프로세스 alive 확인 + pending_bugs.json 유무 보고 |
+| "폴링 결과 보여줘" | pending_bugs.json 읽고 등록안 제시 (3단계로 진입) |
+
+### 버그 현황 조회 (Mode 2) / 티켓 관리 (Mode 3)
+
+> 파이프라인 외 독립 동작. 팀장이 직접 요청하면 Orchestrator가 report-bug를 호출한다.
+
+**Mode 2 (현황 조회):**
+
+1. `config/project.json`에서 프로젝트/버전 자동 참조
+2. **실행 전 확인 필수**: "SAY v1.4.0 기준으로 조회합니다." 와 같이 어떤 프로젝트/버전으로 수집하는지 알려준다
+   - 사용자가 다른 프로젝트/버전을 지정하면 해당 값으로 변경
+   - 추가 필터(컴포넌트, 심각도, 담당자 등)가 있으면 반영
+3. Skill `/report-bug query {PROJECT} --version {VERSION}` 호출
+4. JSON + HTML 보고서 생성 → 사용자에게 요약 보고
+
+**Mode 3 (티켓 관리):**
+
+1. 사용자 요청에서 티켓 키 + 액션 파악 (예: "CENSAY-234 리오픈해")
+2. Skill `/report-bug manage {TICKET_KEY} --action {ACTION}` 호출
+3. 실행 결과 보고
 
 ### Phase 4: 최종 보고
 
@@ -186,6 +263,7 @@ python -m orchestrator.cli_state list
 | 4 | 자동화 구현 여부 | 3 | 수동 | 자동화 검토 후 진행/거부 결정 |
 | 5 | FAIL 분석 결과 | 3 | 자동 | FAIL 없으면 자동 통과, FAIL 있으면 사용자에게 보고 |
 | 6 | 크로스 프로젝트 영향도 | 4 | 수동 | 해당 시에만 |
+| 7 | 버그 등록 승인 | Bug | 수동 | review-bug PASS 후 등록안 선별 + 담당자 지정 |
 
 **수동 승인 시 사용자 응답 처리:**
 - "승인", "ㅇㅇ", "확인" → approved → 다음 단계
@@ -245,6 +323,9 @@ python -m orchestrator.cli_state list
 | Phase 완료 | `progress` | `Phase 1-A 완료. 시나리오 확정됨.` |
 | FAIL 분석 결과 보고 | `progress` | `테스트 3건 FAIL — 실제 버그 1건, 코드 이슈 2건` |
 | 기획서 변경 감지 → 재작업 시작 | `progress` | `기획서 변경 감지. 시나리오 재작업 시작.` |
+| 폴링 FAIL 감지 | `progress` | `시트 폴링: FAIL 5건 감지. 버그 분석 시작.` |
+| 버그 리뷰 완료 | `approval` | `7_bug_register\|버그 3건 등록안 준비 완료. 선별 + 담당자 지정 필요.` |
+| 버그 등록 완료 | `progress` | `JIRA 티켓 2건 등록 완료 (CENSAY-512, CENSAY-513)` |
 
 ### 8.2 재확인 알림 (핵심)
 

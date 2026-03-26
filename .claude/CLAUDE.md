@@ -76,12 +76,14 @@ QA/                          ← 로컬 QA 작업 폴더
 | 6 | Format Checker | `/check-format` | 신규 개발 |
 | 7 | Spec Reviewer | `/review-spec` | 신규 개발 (기획서 기준 리뷰) |
 | 8 | QA Reviewer | `/review-qa` | 신규 개발 (QA 관점 크로스 체크) |
+| 8-1 | Bug Reviewer | `/review-bug` | 신규 개발 (버그 리포트 정합성 검증) |
 | 9 | Impact Analyzer | `/analyze-impact` | 신규 개발 |
 | 10 | Rule Learner | `/learn-rules` | 신규 개발 |
 
 > **리뷰 팀 운영**: Spec Reviewer + QA Reviewer는 병렬로 동시 실행 (Agent Teams)
 > - Spec Reviewer: "기획서에 있는 걸 다 했나?" (커버리지, 비즈니스 로직)
 > - QA Reviewer: "기획서에 없지만 놓치면 안 되는 건?" (엣지케이스, 경계값, 네거티브)
+> - Bug Reviewer: "등록할 버그 리포트가 규칙에 맞나?" (필드 완성도, 심각도 정합성, 중복 판단)
 
 ### 자동화
 
@@ -141,7 +143,7 @@ QA/                          ← 로컬 QA 작업 폴더
 
 불일치 발견 시 Figma 기준으로 시나리오 반영, 변경 목록은 Orchestrator → 팀장에게 보고
 
-### 3.4 승인 포인트 (7개)
+### 3.4 승인 포인트 (8개)
 - **수동 승인**: 팀장 응답 대기 (멈춤) / **자동 승인**: 자동 통과
 - 승인 후 반드시 "승인 즉시 실행" 액션을 완료하고 다음 Phase로 진입 (중단 금지)
 
@@ -154,6 +156,7 @@ QA/                          ← 로컬 QA 작업 폴더
 | 4 | 자동화 구현 여부 | 3 | 수동 | Automation Assessor 검토 후 진행/거부 결정 |
 | 5 | FAIL 분석 결과 | 3 | 자동 | FAIL 없으면 자동 통과, FAIL 있으면 사용자에게 보고 |
 | 6 | 크로스 프로젝트 영향도 | 4 | 수동 | SSO 또는 공통 변경 해당 시에만 |
+| 7 | 버그 등록 승인 | Bug | 수동 | review-bug PASS 후 등록안 선별 + 담당자 지정 |
 
 ### 3.5 업무 흐름 요약
 
@@ -198,6 +201,16 @@ Phase 4: 최종 보고
   ③ 파이프라인 완료 요약 출력
 
 ─── 독립 호출 (파이프라인 외) ───
+Phase Bug: 독립 버그 등록 (Orchestrator 관리)
+  ① 정보 수집 (프로젝트/버전/시트) — config/project.json 자동 참조
+  ② 폴링 시작 (시트 FAIL 감시) 또는 수동 버그 입력
+  ③ report-bug Phase A (수집 + 분석)
+  ④ review-bug (정합성 검증, 리뷰 루프 최대 3회)
+  ⑤ 등록안 제시 → ★ 승인 7: 선별 + 담당자 지정
+  ⑥ report-bug Phase B (JIRA 등록/리오픈)
+  ⑦ 실행 결과 보고 + 추가 FAIL 시 ③부터 반복
+  ⑧ 폴링 종료 (팀장 명시 요청 시)
+
 Bug Reporter Mode 2 (query): 팀장 직접 요청 → 버그 현황 조회 + QA 분석 보고서 (JSON + HTML)
 Bug Reporter Mode 3 (manage): 팀장 직접 요청 → 티켓 상태 변경, 담당자 변경, 코멘트 추가
 ```
@@ -215,7 +228,7 @@ Bug Reporter Mode 3 (manage): 팀장 직접 요청 → 티켓 상태 변경, 담
 qa_agent/
 ├── .claude/
 │   ├── CLAUDE.md                      ← 이 파일
-│   └── skills/                        ← 에이전트 스킬 정의 (14개)
+│   └── skills/                        ← 에이전트 스킬 정의 (15개)
 │       ├── setup/SKILL.md               (신규) Setup Guide - 온보딩
 │       ├── run-pipeline/SKILL.md        (신규) Orchestrator
 │       ├── write-scenario/SKILL.md      (기존) Scenario Writer
@@ -226,6 +239,7 @@ qa_agent/
 │       ├── check-format/SKILL.md        (신규) Format Checker
 │       ├── review-spec/SKILL.md         (신규) Spec Reviewer
 │       ├── review-qa/SKILL.md           (신규) QA Reviewer
+│       ├── review-bug/SKILL.md          (신규) Bug Reviewer
 │       ├── analyze-impact/SKILL.md      (신규) Impact Analyzer
 │       ├── learn-rules/SKILL.md         (신규) Rule Learner
 │       ├── assess-automation/SKILL.md   (신규) Automation Assessor
