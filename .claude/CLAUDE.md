@@ -345,4 +345,4 @@ qa_agent/
 
 ---
 
-**최종 업데이트:** 2026-03-26 (v2.10.0 - review-bug 스킬 신설, Orchestrator 버그 관리 확장, setup 대화형 입력 개선)
+**최종 업데이트:** 2026-04-01 (v2.10.1 - README 스킬 목록 기능별 정리, write-scenario 작성 원칙 추가)
