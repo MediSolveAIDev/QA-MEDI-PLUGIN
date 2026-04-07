@@ -45,7 +45,7 @@ QA/                          ← 로컬 QA 작업 폴더
 
 ---
 
-## 2. 에이전트 목록 (15개)
+## 2. 에이전트 목록 (16개)
 
 ### 유틸리티
 
@@ -68,6 +68,7 @@ QA/                          ← 로컬 QA 작업 폴더
 | 3 | TC Writer | `/write-tc` | 기존 (SAY 이관) |
 | 4 | Project Reporter | `/report-project` | 신규 개발 |
 | 5 | Bug Reporter | `/report-bug` | 활성화 (Atlassian MCP 연결 시 동작, `/setup`에서 설정) — 3개 모드: 이슈 등록(Mode 1) + 현황 조회/보고서(Mode 2) + 티켓 관리(Mode 3) |
+| 5-1 | Quick Bug Filer | `/file-bug` | 신규 개발 (수동 테스트 → 구두 설명 → JIRA 포맷 작성 + 등록) |
 
 ### 분석/리뷰 (전 프로젝트 공통)
 
@@ -228,7 +229,7 @@ Bug Reporter Mode 3 (manage): 팀장 직접 요청 → 티켓 상태 변경, 담
 qa_agent/
 ├── .claude/
 │   ├── CLAUDE.md                      ← 이 파일
-│   └── skills/                        ← 에이전트 스킬 정의 (15개)
+│   └── skills/                        ← 에이전트 스킬 정의 (16개)
 │       ├── setup/SKILL.md               (신규) Setup Guide - 온보딩
 │       ├── run-pipeline/SKILL.md        (신규) Orchestrator
 │       ├── write-scenario/SKILL.md      (기존) Scenario Writer
@@ -236,6 +237,7 @@ qa_agent/
 │       ├── write-tc/SKILL.md            (기존) TC Writer
 │       ├── report-project/SKILL.md      (신규) Project Reporter
 │       ├── report-bug/SKILL.md          (신규) Bug Reporter
+│       ├── file-bug/SKILL.md            (신규) Quick Bug Filer
 │       ├── check-format/SKILL.md        (신규) Format Checker
 │       ├── review-spec/SKILL.md         (신규) Spec Reviewer
 │       ├── review-qa/SKILL.md           (신규) QA Reviewer
@@ -345,4 +347,4 @@ qa_agent/
 
 ---
 
-**최종 업데이트:** 2026-04-01 (v2.10.1 - README 스킬 목록 기능별 정리, write-scenario 작성 원칙 추가)
+**최종 업데이트:** 2026-04-07 (v2.10.2 - file-bug 스킬 신설: 수동 테스트 버그 → JIRA 즉시 등록)
