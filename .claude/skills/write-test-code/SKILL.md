@@ -629,3 +629,193 @@ run: python -m pytest tests/ --reruns 2 --reruns-delay 3
 - 실패 시 스크린샷 자동 저장: `page.screenshot(path=f"data/test_results/fail_{test_name}.png")`
 - 아티팩트로 스크린샷 함께 업로드
 - GitHub Actions 로그에서 pytest 출력 확인
+
+---
+
+## 14. 코드 품질 원칙 (디버깅 친화 + 중복 최소화)
+
+테스트 코드 작성 시 처음부터 다음 11개 원칙을 모두 따른다. 일부만 적용하고 "안정화 후 리팩터링"하면 누적 비용이 크다. SKILL 은 신규 코드의 prescription 이므로 day 1 부터 11 개 모두 적용한다.
+
+### 14.1 디버깅 시간 단축 (D1 ~ D6)
+
+#### D1. 검증 메시지에 실제 값 포함
+
+모든 검증(`soft_check` / `soft_expect` / `assert` / 로그) 메시지를 f-string 으로 작성하고 입력값·실제 값·기대 값을 메시지에 포함한다. 실패 시 화면 재현 없이 원인 추적 가능해야 한다.
+
+```python
+# ❌ 결과만 보고 원인 모름
+soft_check(reporter, found, "값 확인")
+
+# ✅ 실패 시 실제 값으로 즉시 진단
+soft_check(reporter, found, f"값 확인 (actual={actual}, expected={expected})")
+```
+
+#### D2. step 에 식별자 + 의미 라벨 부여
+
+모든 step 이름은 `TC-ID: 한글 의미` 형식으로 작성한다. 실패 로그에서 TC 매핑 + 의미가 즉시 파악된다.
+
+```python
+with step(reporter, "TC-001a: 입력 필드 노출 확인"):
+    ...
+```
+
+#### D3. 데이터 variant 별 step 분리
+
+같은 검증을 다른 variant(입력 종류·권한·환경·디바이스·상태 등)에 적용할 때, 한 step 에 여러 variant 를 욱여넣지 않는다. 분리하면 어느 variant 에서 깨졌는지 즉시 식별된다.
+
+```python
+# ❌ 어느 케이스에서 실패했는지 추적 불가
+with step(reporter, "TC-001: 입력 필드 검증"):
+    for variant in [...]: ...
+
+# ✅ variant 별 step ID 분리
+with step(reporter, "TC-001a: 단일 입력"):
+    ...
+with step(reporter, "TC-001b: 다중 입력"):
+    ...
+```
+
+#### D4. 함수 길이·단일 책임 가이드 (~50 줄)
+
+한 함수에 진입·검증·후처리·예외 분기를 섞지 않는다. ~50 줄 초과 또는 책임이 복합적이면 sub 함수로 분할한다. stack trace 에서 실패 위치가 즉시 보이도록 하는 것이 목표.
+
+```python
+# ❌ 단일 함수에 진입·폼 제출·예외 분기·검증이 섞임
+def login(...): ...   # 100+ 줄
+
+# ✅ 책임 단위 sub 함수로 분할
+def login(...):
+    _wait_for_login_page(page)
+    _submit_login_form(page, id)
+    _verify_login_success(page, id)
+```
+
+#### D5. 명시적 실패 + 컨텍스트 raise
+
+미발견·예외를 silent 처리(`return None`, `pass`)하지 않는다. 원인·컨텍스트(검색어·인덱스·상태)를 메시지에 박아 raise 한다.
+
+```python
+# ❌ 호출자가 None 반환 원인 모름
+if target is None:
+    return None
+
+# ✅ 원인 + 컨텍스트
+if target is None:
+    raise Exception(f"'{key}' 행을 찾을 수 없음 (검색어={query}, rows={count})")
+```
+
+#### D6. 검증 raw 데이터 보존
+
+검증 실패 시 expected / actual / snapshot 을 결과 파일에 저장한다. 사후 분석 시 화면·DB 재현 없이 원인 분석 가능하도록.
+
+```python
+# 결과 저장기(ChecklistReporter 등)가 실패 시 raw 정보를 함께 기록
+soft_expect(reporter, locator, "to_have_text", "제목 확인", expected="Hello")
+# 실패 시 결과 JSON 에 actual="World", expected="Hello", raw=... 저장됨
+```
+
+---
+
+### 14.2 코드 중복 최소화 (C1 ~ C5)
+
+#### C1. 데이터 중앙화 — config / constants / fixtures
+
+인라인 리터럴(URL·계정·라벨·메시지·임계값)을 테스트 코드에 박지 않는다. 모듈로 분리해 단일 소스로 관리한다.
+
+```
+config/
+├── accounts.py    ← 계정·권한·이메일
+├── urls.py        ← URL·라우트
+├── messages.py    ← 토스트·알럿·라벨
+└── test_data.py   ← 시드 데이터·임계값
+```
+
+```python
+# ❌ 인라인
+page.goto("https://stg.example.com/login")
+
+# ✅ 단일 소스
+from config import URLS
+page.goto(URLS["login"])
+```
+
+#### C2. 헬퍼 분할 기준 강화
+
+기존 0.2 의 "2 회 이상 반복 → 헬퍼" 기준에 다음을 추가한다.
+
+- 단일 함수 ~50 줄 초과 → sub 분할 (D4 와 동일 원칙)
+- 한 함수에 진입·검증·후처리가 섞이면 → 책임별 sub 분할
+- 동일 로직이 자료구조만 달리 반복되면 → 일반 함수 + 인자로 분리
+
+#### C3. spec / dict 기반 generic 검증 패턴
+
+상태·조건·케이스별 if-elif 분기 대신 dict + 일반 함수로 정의한다. 새 케이스 추가 = dict 한 줄.
+
+```python
+# ❌ 케이스 추가 시 함수 분기 폭발
+def check_buttons(state):
+    if state == "pending":
+        ...
+    elif state == "approved":
+        ...
+
+# ✅ spec dict + 일반 함수
+SPEC_MAP = {
+    "pending":  {"submit_enabled": True,  "label": "처리 중"},
+    "approved": {"submit_enabled": False, "label": "완료"},
+}
+def verify(row, spec):
+    btn = row.locator("[data-testid=submit]")
+    expect(btn).to_be_enabled() if spec["submit_enabled"] else expect(btn).to_be_disabled()
+```
+
+#### C4. 매직 상수 통합 모듈
+
+대기 시간·자주 쓰는 정규식·임계값·반복 셀렉터를 한 모듈에 모은다. 튜닝 시 1 곳에서 통제.
+
+```python
+# helpers/timing.py
+WAIT_SHORT      = 500
+WAIT_MEDIUM     = 1500
+WAIT_LONG       = 3000
+TIMEOUT_DEFAULT = 5000
+TIMEOUT_LONG    = 15000
+
+# 호출 측 — 매직 넘버 박지 않기
+page.wait_for_timeout(WAIT_MEDIUM)
+```
+
+#### C5. variant 그룹 상수화
+
+데이터·권한·환경별 그룹을 의미 있는 상수로 묶는다. 결정성 확보 + 테스트 매트릭스 명시.
+
+```python
+# ❌ 매번 인덱스/문자열 박기
+products = ["product_a", "product_b", "product_c"]
+
+# ✅ 의미 있는 그룹 상수
+ADMIN_ACCOUNTS    = [...]
+INDIVIDUAL_INPUTS = [...]
+BATCH_INPUTS      = [...]
+MOBILE_VIEWPORTS  = [...]
+```
+
+---
+
+### 14.3 위반 점검
+
+새 코드 작성/리뷰 시 11 개 원칙 모두 점검:
+
+| 원칙 | 점검 질문 |
+|---|---|
+| D1 | 검증 메시지에 실제 값이 들어 있나? |
+| D2 | step 이름에 TC ID + 한글 라벨이 있나? |
+| D3 | variant 별로 step 이 분리됐나? |
+| D4 | 함수가 50 줄 넘거나 책임이 섞이지 않았나? |
+| D5 | 미발견·예외를 silent 처리하지 않았나? |
+| D6 | 검증 실패 시 raw 데이터가 결과에 저장되나? |
+| C1 | 인라인 리터럴(URL·계정·라벨)이 남아 있지 않나? |
+| C2 | 50 줄+ 함수가 sub 로 분할됐나? |
+| C3 | 상태별 if-elif 분기가 spec dict 로 대체됐나? |
+| C4 | 매직 넘버가 상수 모듈을 통해 사용되나? |
+| C5 | variant 가 의미 있는 그룹 상수로 묶였나? |
