@@ -226,14 +226,21 @@ PENDING_FILE = 'data/bugs/pending_bugs.json'
 FLAG_ACTIVE = 'data/bugs/.poll_active'
 FLAG_STOP = 'data/bugs/.poll_stop'
 
-# 시트 컬럼 매핑 (0-indexed)
-COL_COMPONENT = 0    # A: JIRA 컴포넌트
-COL_DEPTH_START = 1  # B~G: 1~6 Depth
-COL_DEPTH_END = 6
-COL_PRIORITY = 7     # H: Priority
-COL_EXPECTED = 8     # I: Expected Result
+# 시트 컬럼 매핑 (0-indexed) — 새 양식 v1.0
+COL_BLANK = 0        # A: 빈칸 (가독성)
+COL_TCID = 1         # B: TCID (<도메인>-<L2약어>-<NNN>)
+COL_L1 = 2           # C: 대분류 (화면)
+COL_L2 = 3           # D: 중분류 (UI 영역)
+COL_L3 = 4           # E: 소분류 (UI 요소·동작)
+COL_PRECONDITION = 5 # F: 사전조건
+COL_STEP = 6         # G: Step
+COL_EXPECTED = 7     # H: 기대결과
+COL_PRIORITY = 8     # I: Priority
 COL_RESULT = 9       # J: Result (F = FAIL)
-COL_BTS_ID = 13      # N: BTS ID
+COL_ASSIGNEE = 10    # K: 담당자
+COL_DATE = 11        # L: Date
+COL_BTS_ID = 12      # M: BTS ID
+COL_NOTE = 13        # N: 비고
 
 def load_env():
     """Load .env file"""

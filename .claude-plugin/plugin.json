@@ -1,7 +1,7 @@
 {
   "name": "qa-medi-plugin",
-  "version": "2.10.2",
-  "description": "QA AI 에이전트 팀 운영 시스템 - Orchestrator 기반 자율 협업 (16개 에이전트)",
+  "version": "3.0.0",
+  "description": "QA AI 에이전트 팀 운영 시스템 - Orchestrator 기반 자율 협업 (16개 에이전트). v3.0 TC 작성 규칙 전면 개정 (패턴 A 분류 + 약어 TCID + 분해 알고리즘 + 사전조건 누적 규칙)",
   "author": {
     "name": "MediSolveAIDev",
     "url": "https://github.com/MediSolveAIDev"

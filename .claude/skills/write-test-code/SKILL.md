@@ -8,6 +8,13 @@ argument-hint: "[TC 파일 경로 또는 시나리오 파일 경로]"
 
 입력: $ARGUMENTS
 
+> **본 스킬은 `.claude/rules/tc_writing_rule.md` 규칙을 따른다.**
+> TC JSON 구조: `category_l1/l2/l3` + `precondition` + `step` + `expected` (분해된 행 = 한 TC = 한 검증).
+> - TC ID 형식: `<도메인>-<L2약어>-<NNN>` (예: `RSV-FLT-001`) → 테스트 함수명에 사용 가능
+> - 한 TC = 한 pytest 함수 (분해된 각 행이 독립 TC)
+> - `precondition` → fixture, `step` → action, `expected` → assert
+> - 분해 행 사전조건 누적(옵션 A) 적용된 상태라 각 TC가 자기 충족적
+
 ---
 
 ## 0. 선행 탐색 (코드 생성 전 필수)
@@ -819,3 +826,116 @@ MOBILE_VIEWPORTS  = [...]
 | C3 | 상태별 if-elif 분기가 spec dict 로 대체됐나? |
 | C4 | 매직 넘버가 상수 모듈을 통해 사용되나? |
 | C5 | variant 가 의미 있는 그룹 상수로 묶였나? |
+
+---
+
+## 15. 자동화 커버리지 리포트 (TC 기반 입력일 때만)
+
+테스트 코드 작성 완료 시점에 **TC 기준 커버리지**를 산정하여 리포트를 출력한다.
+
+### 15.0 적용 조건 (필수)
+
+**TC JSON이 입력으로 사용된 경우에만 커버리지 산정**. 다음 조건에선 SKIP:
+
+| 입력 | 커버리지 산정 |
+|---|---|
+| TC JSON 파일 (`data/tc/{...}_tc.json`) | ✓ 산정 |
+| 시나리오 MD만 (TC 없음) | **SKIP** — TC가 없어 매핑 대상 없음 |
+| Confluence Page / Figma 노드 (시나리오 입력) | **SKIP** |
+| 혼합 (시나리오 + 일부 TC) | TC 있는 부분만 산정 |
+
+**SKIP 시 동작**: 콘솔에 "TC JSON이 없어 커버리지 리포트를 생략합니다." 한 줄 출력. coverage.json 파일 생성 X.
+
+### 15.1 산정 방식 (TC JSON 있을 때)
+
+1. TC JSON에서 전체 TC 목록 추출 (`data/tc/{...}_tc.json`)
+2. 작성된 테스트 파일 스캔 → 각 함수에 매핑된 TC ID 추출 (step 이름 또는 docstring에서 `TC-ID:` 토큰 검색)
+3. TC ID 매칭으로 자동화 여부 판정
+4. 영역별(L2 약어) / 우선순위별(P1/P2/P3) 분포 집계
+
+### 15.2 출력 형식 (필수)
+
+**JSON 저장**: `data/test_results/{프로젝트}_{버전}_{기능}_coverage.json`
+
+```json
+{
+  "metadata": {
+    "product": "DAY",
+    "version": "v0.1.0",
+    "feature": "예약관리",
+    "abbreviation": "RSV",
+    "tc_source": "data/tc/DAY_v0.1.0_예약관리_tc.json",
+    "test_source": "tests/test_DAY_v0.1.0_예약관리.py",
+    "generated_at": "2026-05-12T15:00:00"
+  },
+  "summary": {
+    "total_tc": 39,
+    "automated": 25,
+    "coverage_pct": 64.1
+  },
+  "by_area": [
+    {"l2_abbr": "ENT", "l2_name": "화면 진입", "total": 2, "automated": 2, "coverage_pct": 100.0},
+    {"l2_abbr": "FLT", "l2_name": "좌측 필터 패널", "total": 10, "automated": 10, "coverage_pct": 100.0},
+    {"l2_abbr": "STA", "l2_name": "상태 전이", "total": 8, "automated": 6, "coverage_pct": 75.0},
+    {"l2_abbr": "CAL", "l2_name": "캘린더 뷰", "total": 6, "automated": 4, "coverage_pct": 66.7},
+    {"l2_abbr": "REG", "l2_name": "예약 등록 슬라이드 패널", "total": 5, "automated": 3, "coverage_pct": 60.0},
+    {"l2_abbr": "DTL", "l2_name": "예약 상세 패널", "total": 3, "automated": 0, "coverage_pct": 0.0},
+    {"l2_abbr": "PRM", "l2_name": "권한 검증", "total": 2, "automated": 0, "coverage_pct": 0.0}
+  ],
+  "by_priority": [
+    {"priority": "P1", "total": 20, "automated": 18, "coverage_pct": 90.0},
+    {"priority": "P2", "total": 12, "automated": 6, "coverage_pct": 50.0},
+    {"priority": "P3", "total": 7, "automated": 1, "coverage_pct": 14.3}
+  ],
+  "automated_tcs": ["RSV-ENT-001", "RSV-ENT-002", "RSV-FLT-001", "..."],
+  "missing_tcs": [
+    {"id": "RSV-STA-006", "priority": "P2", "l2": "상태 전이", "l3": "종료 상태 드롭다운"},
+    {"id": "RSV-STA-007", "priority": "P2", "l2": "상태 전이", "l3": "종료 상태 드롭다운"},
+    {"id": "RSV-CAL-005", "priority": "P1", "l2": "캘린더 뷰", "l3": "예약 카드 드래그 (당일)"},
+    {"id": "RSV-DTL-001", "priority": "P1", "l2": "예약 상세/수정 슬라이드 패널", "l3": "환자 카드 클릭"}
+  ]
+}
+```
+
+**마크다운 요약 (콘솔 출력)**:
+
+```
+=== 자동화 커버리지 ===
+대상: DAY v0.1.0 예약관리 (RSV)
+총 TC: 39건 / 자동화: 25건 / 커버리지 64.1%
+
+영역별:
+  ENT 화면 진입         : 2/2  (100%)
+  FLT 좌측 필터 패널    : 10/10 (100%)
+  STA 상태 전이         : 6/8  (75%)
+  CAL 캘린더 뷰         : 4/6  (66.7%)
+  REG 예약 등록         : 3/5  (60%)
+  DTL 예약 상세         : 0/3  (0%)  ← 미착수
+  PRM 권한 검증         : 0/2  (0%)  ← 미착수
+
+우선순위별:
+  P1: 18/20 (90%)
+  P2: 6/12  (50%)
+  P3: 1/7   (14.3%)
+
+미자동화 TC (14건):
+  RSV-STA-006, RSV-STA-007, RSV-CAL-005, RSV-DTL-001, ...
+```
+
+### 15.3 시트 반영 (선택)
+
+커버리지 JSON을 기반으로 시트에 자동화 여부 컬럼 갱신 가능. **별도 도구로 처리** (write-test-code 직접 호출 X):
+
+| 옵션 | 처리 방식 |
+|---|---|
+| A. 시트에 "Auto" 컬럼 추가 | 자동화된 TC 행에 "✓" 또는 함수명 표시 |
+| B. 비고 컬럼 활용 | 비고 컨벤션상 액션 필요 항목만이라 비추 |
+| C. 시트 외부 통계만 보관 | JSON·HTML 리포트로 별도 관리 (기본 권장) |
+
+→ **옵션 A 또는 C** 권장. 시트 컬럼 추가 시 기존 컬럼 매핑(init 스킬의 `COL_*`)도 함께 갱신 필요.
+
+### 15.4 호출 시점
+
+- `write-test-code` 실행 마지막 단계 (코드 작성 + lint 통과 후)
+- Orchestrator의 Phase 3 (자동화) 종료 시점 자동 산정
+- `report-project`에서 종합 보고서 작성 시 이 JSON 참조

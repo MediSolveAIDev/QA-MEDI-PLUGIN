@@ -8,6 +8,12 @@ argument-hint: [스크린샷 또는 버그 설명]
 
 > 수동 테스트 중 발견한 버그를 **구두 설명(또는 스크린샷)만으로 JIRA 이슈까지 등록**하는 원스톱 스킬.
 > 질문하지 않고 바로 작성 → 팀장 확인 → JIRA 등록.
+
+> **본 스킬은 `.claude/rules/tc_writing_rule.md` 규칙을 따른다.**
+> 버그 리포트의 재현 절차는 관련 TC가 있으면 그 TC의 **`precondition` + `step`** 필드를 그대로 복사 사용한다.
+> - 관련 TC ID(예: `RSV-FLT-001`)가 있으면 JIRA 본문에 명시
+> - 약어 ID의 L2 약어(예: `FLT` = 좌측 필터 패널)로 JIRA 컴포넌트 자동 매핑 가능
+> - 본문은 비즈니스 용어만 (개발 용어·HTTP 코드는 별도 필드)
 >
 > **기존 스킬과의 차이:**
 > - `/report-bug`: 파이프라인 연계 (Phase A/B 분리, 자동화 테스트 FAIL 기반)
@@ -228,7 +234,6 @@ BUG-{PROJECT}-{순번}: {보정된 summary}
         "issue_type": "Bug",
         "component": "{컴포넌트}",
         "versions": ["{version}"],
-        "labels": ["QA-Agent", "{version}"],
         "assignee": ""
       },
       "jira_candidates": [],
@@ -276,8 +281,9 @@ AND summary ~ "{핵심 키워드}"
 ```
 1. jira_create_issue 호출
    - project_key, summary, description(멀티라인), issue_type=Bug
-   - priority, component, versions, labels
+   - priority, component, versions
    - assignee (팀장이 지정한 경우)
+   - **labels는 생성하지 않음** (라벨 자동 매핑 비활성화)
 2. 생성된 이슈 키 기록
 3. 유사 티켓이 참고용으로 있으면 → 이슈 링크 (relates to)
 ```
@@ -366,7 +372,7 @@ JIRA 등록 완료:
 - description은 **반드시 실제 멀티라인**으로 전달 (`\n` 이스케이프 금지)
 - 상태 변경(transition) + 코멘트는 **2단계 분리 실행** (transition_issue의 comment 파라미터 줄바꿈 불가)
 - 담당자는 이름으로 통일 (예: `{"assignee": "홍길동"}`)
-- labels에 `QA-Agent` + 버전 태그 필수 포함
+- **labels는 자동 생성하지 않음** (메모리 규칙: 레이블 절대 제외)
 - 등록 실패 시 에러를 결과에 기록하고 팀장에게 보고 (자동 재시도 안 함)
 - 등록 후 `data/bugs/` JSON에 `jira_key`와 `jira_url` 필드 추가 저장
 
@@ -376,7 +382,6 @@ JIRA 등록 완료:
 - 유사도 높은 기존 티켓이 있으면 반드시 팀장에게 안내 후 판단 위임
 
 ### 9.4 기획 확인 필요 건
-- 기획/정책 확인이 필요한 건은 `note`에 명시
-- JIRA labels에 `spec-confirm-needed` 추가
+- 기획/정책 확인이 필요한 건은 `note`에 명시 (JIRA labels 사용 X)
 
 $ARGUMENTS

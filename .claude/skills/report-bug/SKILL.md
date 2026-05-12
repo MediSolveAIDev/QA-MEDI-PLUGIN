@@ -4,6 +4,11 @@
 >
 > **전제 조건**: Atlassian MCP 서버 연결 + JIRA 설정 완료 (`/setup`에서 설정)
 
+> **본 스킬은 `.claude/rules/tc_writing_rule.md` 규칙을 따른다.**
+> 버그 리포트의 재현 절차는 관련 TC가 있으면 그 TC의 **`precondition` + `step`** 필드를 그대로 복사 사용.
+> - TC ID(`<도메인>-<L2약어>-<NNN>`)로 JIRA 컴포넌트 자동 매핑 (라벨은 생성하지 않음)
+> - 본문은 비즈니스 용어, 개발 용어·HTTP 코드는 별도 필드
+
 ---
 
 ## 1. 개요
@@ -281,7 +286,6 @@ Orchestrator에게 전달하는 수집 결과. Orchestrator가 이 데이터를 
       "jira_fields": {
         "project_key": "CENSAY",
         "issue_type": "Bug",
-        "labels": ["QA-Agent", "v1.4.0"],
         "component": "AI가이드"
       },
       "jira_candidates": [
@@ -344,7 +348,6 @@ Orchestrator에게 전달하는 수집 결과. Orchestrator가 이 데이터를 
         "component": "대시보드",
         "versions": ["v1.4.0"],
         "assignee": "홍길동",
-        "labels": ["QA-Agent", "v1.4.0"]
       },
       "attachments": []
     },
@@ -360,7 +363,6 @@ Orchestrator에게 전달하는 수집 결과. Orchestrator가 이 데이터를 
         "component": "설정",
         "versions": ["v1.4.0"],
         "assignee": "김개발",
-        "labels": ["QA-Agent", "v1.4.0"]
       },
       "link_to": {"key": "CENSAY-301", "type": "relates to"}
     }
@@ -492,7 +494,6 @@ resp = requests.post(f"{base_url}/rest/api/2/issue", auth=auth, json={
         "components": [{"name": "대시보드"}],
         "versions": [{"name": "v1.4.0"}],
         "assignee": {"name": "홍길동"},
-        "labels": ["QA-Agent", "v1.4.0"]
     }
 })
 issue_key = resp.json()["key"]  # CENSAY-123
@@ -557,7 +558,7 @@ requests.post(
 
 | 팀장 지시 | action 값 | JIRA API | 비고 |
 |-----------|-----------|----------|------|
-| "신규 등록해" | `create` | `POST /issue` | 기본 필드 + 라벨 + 컴포넌트 |
+| "신규 등록해" | `create` | `POST /issue` | 기본 필드 + 컴포넌트 (라벨 미생성) |
 | "리오픈해" | `reopen` | `POST /issue/{key}/transitions` | 코멘트 자동 추가 |
 | "등록하고 링크 걸어" | `create_and_link` | `POST /issue` + `POST /issueLink` | relates to / caused by |
 | "심각도 올려" | `update_field` | `PUT /issue/{key}` | priority, severity 등 |

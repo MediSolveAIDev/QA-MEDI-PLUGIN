@@ -2,6 +2,9 @@
 
 > 프로젝트별 QA 현황을 집계하여 리포트를 생성합니다.
 
+> **본 스킬은 `.claude/rules/tc_writing_rule.md` 규칙을 따른다.**
+> TC 통계 집계 시 새 스키마 기반 — `category_l1/l2` 단위 그룹화, TC ID(`<도메인>-<L2약어>-<NNN>`) 형식, Test Result 컬럼(Result/담당자/Date/BTS ID) 활용. JIRA labels는 자동 생성하지 않으므로 통계에 포함 X.
+
 ---
 
 ## 1. 개요

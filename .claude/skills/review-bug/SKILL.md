@@ -8,6 +8,10 @@ argument-hint: [bug JSON 파일 경로]
 
 > 버그 리포트(report-bug Phase A 산출물)의 품질과 정합성을 검증하는 리뷰 에이전트.
 > 시나리오의 `/review-spec` + `/review-qa`와 동일한 패턴으로, 버그 등록 전 최종 품질 게이트 역할을 한다.
+
+> **본 스킬은 `.claude/rules/tc_writing_rule.md` 규칙을 따른다.**
+> 버그 본문은 비즈니스 용어만 (DB 컬럼명·상태 코드·HTTP 코드는 별도 필드).
+> 관련 TC ID(`<도메인>-<L2약어>-<NNN>` 형식) 인용 여부 확인.
 >
 > **호출 주체**: Orchestrator (Phase Bug 또는 Phase 3 FAIL 처리 시 자동 호출)
 
@@ -49,7 +53,6 @@ argument-hint: [bug JSON 파일 경로]
 | F7 | component | 비어있으면 FAIL | ERROR |
 | F8 | versions | 비어있으면 FAIL (영향 버전 필수) | ERROR |
 | F9 | assignee | 비어있으면 WARN (팀장 수동 지정 대상이므로) | WARN |
-| F10 | labels | `QA-Agent` 라벨 포함 여부 | WARN |
 | F11 | project_key | 비어있으면 FAIL | ERROR |
 | F12 | issue_type | "Bug"이 아니면 FAIL | ERROR |
 
@@ -79,7 +82,7 @@ argument-hint: [bug JSON 파일 경로]
 |---|-----------|------|--------|
 | J1 | versions 형식 | 배열이 아니거나, `v` 접두사 없으면 WARN | WARN |
 | J2 | component ↔ 시트 | 시트의 컴포넌트와 bug JSON의 component 일치 여부 | WARN |
-| J3 | labels 버전 태그 | labels에 버전 태그 포함 여부 (예: "v1.4.0") | WARN |
+| J3 | labels 미생성 | labels 필드가 있으면 WARN (메모리 규칙: 레이블 절대 제외) | WARN |
 
 ---
 

@@ -8,6 +8,12 @@ argument-hint: [Confluence Page ID 또는 파일 경로]
 
 입력: $ARGUMENTS
 
+> **본 스킬은 `.claude/rules/tc_writing_rule.md` 규칙을 따른다.**
+> 시나리오의 § 섹션 구조는 추후 TC 작성 시 **L2 (UI 영역) 약어 사전**과 1:1 매핑된다.
+> - 한 § = 한 L2 (예: §2 좌측 필터 패널 → L2 약어 `FLT`)
+> - Cross-cutting (실시간 동기화·권한 검증·상태 전이) / 상태(미구현·전체)도 § 섹션으로 두면 가상 L2로 자연스럽게 매핑됨
+> - 영역 단위로 § 섹션을 명확히 구분해서 작성
+
 ---
 
 ## 사전 준비: Atlassian MCP 연결

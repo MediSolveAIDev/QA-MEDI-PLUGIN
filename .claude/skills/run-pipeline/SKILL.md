@@ -1,6 +1,9 @@
 # /run-pipeline - Orchestrator
 
 > Claude Code가 직접 파이프라인을 운영한다. Skill 도구로 각 스킬을 호출하고, JSON으로 상태를 관리한다.
+
+> **본 스킬은 `.claude/rules/tc_writing_rule.md` 규칙을 따른다.**
+> 파이프라인이 호출하는 모든 스킬(write-tc, review-tc, check-format, file-bug 등)이 이 규칙 문서를 따름. v3.0 기준 새 양식(패턴 A + 약어 TCID + 분해)으로 동작.
 >
 > **자연어 트리거**: 아래 패턴이 감지되면 이 스킬을 즉시 실행한다.
 > - "새 업무 줄게", "새 업무", "업무 줄게", "일 줄게"
